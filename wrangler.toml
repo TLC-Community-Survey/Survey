@@ -8,14 +8,11 @@ pages_build_output_dir = "dist"
 # Do NOT include a "main" field - that would make it a Worker
 # The /functions directory contains Pages Functions, not a Worker script
 
-[[d1_databases]]
-binding = "DB"
-database_name = "tlc-survey-db"
-database_id = "" # Set this after creating the D1 database
-
-[env.production]
-  [[env.production.d1_databases]]
-  binding = "DB"
-  database_name = "tlc-survey-db"
-  database_id = "" # Set this for production
+# D1 Database bindings
+# Note: database_id should be set via Cloudflare Dashboard → Settings → Functions → D1 Database bindings
+# The binding will be configured in the dashboard, not in wrangler.toml for Pages projects
+# [[d1_databases]]
+# binding = "DB"
+# database_name = "tlc-survey-db"
+# database_id = "" # Set this after creating the D1 database
 
