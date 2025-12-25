@@ -32,3 +32,12 @@ dist-ssr
 # Cloudflare
 .wrangler
 
+# Testing
+coverage
+.nyc_output
+*.test.js.snap
+
+# Build artifacts
+dist
+dist-ssr
+
