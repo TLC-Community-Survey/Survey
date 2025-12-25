@@ -1,10 +1,12 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import FormField from './FormField'
 import SearchableDropdown from './SearchableDropdown'
+import BugDetailsModal from './BugDetailsModal'
 import Footer from './Footer'
 import { submitSurvey } from '../services/api'
 import { CPU_OPTIONS, GPU_OPTIONS, RAM_OPTIONS, STORAGE_OPTIONS } from '../data/hardwareOptions'
+import { hasConsent, refreshSession, setSessionCookie, isSessionValid } from '../utils/cookies'
 
 const COMMON_BUGS = [
   'Boat Stuck',
@@ -92,6 +94,7 @@ function SurveyForm() {
   const [errors, setErrors] = useState({})
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitStatus, setSubmitStatus] = useState(null)
+  const [openBugModal, setOpenBugModal] = useState(null)
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target
@@ -120,6 +123,22 @@ function SurveyForm() {
         : [...current, value]
       return { ...prev, [name]: newValue }
     })
+  }
+
+  const handleBugCheckbox = (bug) => {
+    const isCurrentlyChecked = formData.commonBugsExperienced.includes(bug)
+    
+    if (!isCurrentlyChecked) {
+      // Adding bug - open modal
+      handleMultiSelect('commonBugsExperienced', bug)
+      // Only open modal for bugs that have details (not "Other")
+      if (bug !== 'Other') {
+        setOpenBugModal(bug)
+      }
+    } else {
+      // Removing bug
+      handleMultiSelect('commonBugsExperienced', bug)
+    }
   }
 
   const validateStep = (step) => {
@@ -172,6 +191,29 @@ function SurveyForm() {
     window.scrollTo(0, 0)
   }
 
+  // Check cookie consent and manage session
+  useEffect(() => {
+    if (!hasConsent()) {
+      // Redirect to landing page if no consent
+      navigate('/survey')
+      return
+    }
+    
+    // Set or refresh session cookie
+    if (!isSessionValid()) {
+      setSessionCookie()
+    } else {
+      refreshSession()
+    }
+
+    // Refresh session every 5 minutes while on form
+    const sessionRefreshInterval = setInterval(() => {
+      refreshSession()
+    }, 5 * 60 * 1000) // 5 minutes
+
+    return () => clearInterval(sessionRefreshInterval)
+  }, [navigate])
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     
@@ -200,8 +242,6 @@ function SurveyForm() {
       setIsSubmitting(false)
     }
   }
-
-  const hasBug = (bugName) => formData.commonBugsExperienced.includes(bugName)
 
   if (submitStatus === 'success') {
     return (
@@ -480,10 +520,22 @@ function SurveyForm() {
                     <input
                       type="checkbox"
                       checked={formData.commonBugsExperienced.includes(bug)}
-                      onChange={() => handleMultiSelect('commonBugsExperienced', bug)}
+                      onChange={() => handleBugCheckbox(bug)}
                       className="w-4 h-4 text-notion-accent focus:ring-notion-accent"
                     />
                     <span>{bug}</span>
+                    {formData.commonBugsExperienced.includes(bug) && bug !== 'Other' && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault()
+                          setOpenBugModal(bug)
+                        }}
+                        className="ml-2 text-xs text-notion-accent hover:underline"
+                      >
+                        (Edit details)
+                      </button>
+                    )}
                   </label>
                 ))}
               </div>
@@ -523,206 +575,6 @@ function SurveyForm() {
               )}
             </div>
             
-            {/* Bug-specific questions */}
-            {hasBug('Boat Stuck') && (
-              <div className="border-l-4 border-notion-accent pl-4 space-y-4">
-                <h4 className="font-semibold text-notion-text">Boat Stuck Bug Details</h4>
-                <div className="mb-4">
-                  <label className="block mb-2 font-medium text-notion-text">Posted about issues? (Boat1)</label>
-                  <div className="space-y-2">
-                    {['Discord', 'Channel 37 Support e-mail', 'In Game Feedback', 'Reddit', 'Other'].map((option) => (
-                      <label key={option} className="flex items-center gap-2 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={formData.postedAboutIssuesBoat1.includes(option)}
-                          onChange={() => handleMultiSelect('postedAboutIssuesBoat1', option)}
-                          className="w-4 h-4 text-notion-accent"
-                        />
-                        <span>{option}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-                <FormField
-                  label="Method used to resolve (Boat1)"
-                  name="methodUsedToResolveBoat1"
-                  type="text"
-                  value={formData.methodUsedToResolveBoat1}
-                  onChange={handleChange}
-                  placeholder="How did you resolve it?"
-                />
-                <FormField
-                  label="Link to post (Boat1)"
-                  name="linkToPostBoat1"
-                  type="url"
-                  value={formData.linkToPostBoat1}
-                  onChange={handleChange}
-                  placeholder="https://..."
-                />
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    name="wasItResolvedBoat1"
-                    checked={formData.wasItResolvedBoat1}
-                    onChange={handleChange}
-                    className="w-4 h-4 text-notion-accent"
-                  />
-                  <span>Was it resolved? (Boat1)</span>
-                </label>
-              </div>
-            )}
-            
-            {hasBug('Boat Sinking/Flying') && (
-              <div className="border-l-4 border-notion-accent pl-4 space-y-4">
-                <h4 className="font-semibold text-notion-text">Boat Sinking/Flying Bug Details</h4>
-                <div className="mb-4">
-                  <label className="block mb-2 font-medium text-notion-text">Posted about issues? (Boat2)</label>
-                  <div className="space-y-2">
-                    {['Discord', 'Channel 37 Support e-mail', 'In Game Feedback', 'Reddit', 'Other'].map((option) => (
-                      <label key={option} className="flex items-center gap-2 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={formData.postedAboutIssuesBoat2.includes(option)}
-                          onChange={() => handleMultiSelect('postedAboutIssuesBoat2', option)}
-                          className="w-4 h-4 text-notion-accent"
-                        />
-                        <span>{option}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-                <FormField
-                  label="Method used to resolve (Boat2)"
-                  name="methodUsedToResolveBoat2"
-                  type="text"
-                  value={formData.methodUsedToResolveBoat2}
-                  onChange={handleChange}
-                  placeholder="How did you resolve it?"
-                />
-                <FormField
-                  label="Link to post (Boat2)"
-                  name="linkToPostBoat2"
-                  type="url"
-                  value={formData.linkToPostBoat2}
-                  onChange={handleChange}
-                  placeholder="https://..."
-                />
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    name="wasItResolvedBoat2"
-                    checked={formData.wasItResolvedBoat2}
-                    onChange={handleChange}
-                    className="w-4 h-4 text-notion-accent"
-                  />
-                  <span>Was it resolved? (Boat2)</span>
-                </label>
-              </div>
-            )}
-            
-            {hasBug('Elevator issues') && (
-              <div className="border-l-4 border-notion-accent pl-4 space-y-4">
-                <h4 className="font-semibold text-notion-text">Elevator Issues Details</h4>
-                <div className="mb-4">
-                  <label className="block mb-2 font-medium text-notion-text">Posted about issues? (Elevator)</label>
-                  <div className="space-y-2">
-                    {['Discord', 'Channel 37 Support e-mail', 'In Game Feedback', 'Reddit', 'Other'].map((option) => (
-                      <label key={option} className="flex items-center gap-2 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={formData.postedAboutIssuesElevator.includes(option)}
-                          onChange={() => handleMultiSelect('postedAboutIssuesElevator', option)}
-                          className="w-4 h-4 text-notion-accent"
-                        />
-                        <span>{option}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-                <FormField
-                  label="What POI? (Elevator)"
-                  name="whatPoiElevator"
-                  type="text"
-                  value={formData.whatPoiElevator}
-                  onChange={handleChange}
-                  placeholder="Which point of interest?"
-                />
-                <FormField
-                  label="Method used to resolve (Elevator)"
-                  name="methodUsedToResolveElevator"
-                  type="text"
-                  value={formData.methodUsedToResolveElevator}
-                  onChange={handleChange}
-                  placeholder="How did you resolve it?"
-                />
-                <FormField
-                  label="Link to post (Elevator)"
-                  name="linkToPostElevator"
-                  type="url"
-                  value={formData.linkToPostElevator}
-                  onChange={handleChange}
-                  placeholder="https://..."
-                />
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    name="wasItResolvedElevator"
-                    checked={formData.wasItResolvedElevator}
-                    onChange={handleChange}
-                    className="w-4 h-4 text-notion-accent"
-                  />
-                  <span>Was it resolved? (Elevator)</span>
-                </label>
-              </div>
-            )}
-            
-            {hasBug('Sliding buildings on boat') && (
-              <div className="border-l-4 border-notion-accent pl-4 space-y-4">
-                <h4 className="font-semibold text-notion-text">Sliding Buildings Bug Details</h4>
-                <div className="mb-4">
-                  <label className="block mb-2 font-medium text-notion-text">Posted about issues? (Sliding)</label>
-                  <div className="space-y-2">
-                    {['Discord', 'Channel 37 Support e-mail', 'In Game Feedback', 'Reddit', 'Other'].map((option) => (
-                      <label key={option} className="flex items-center gap-2 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={formData.postedAboutIssuesSliding.includes(option)}
-                          onChange={() => handleMultiSelect('postedAboutIssuesSliding', option)}
-                          className="w-4 h-4 text-notion-accent"
-                        />
-                        <span>{option}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-                <FormField
-                  label="Picture (Sliding)"
-                  name="pictureSliding"
-                  type="url"
-                  value={formData.pictureSliding}
-                  onChange={handleChange}
-                  placeholder="URL to screenshot/image"
-                />
-                <FormField
-                  label="Link to post (Sliding)"
-                  name="linkToPostSliding"
-                  type="url"
-                  value={formData.linkToPostSliding}
-                  onChange={handleChange}
-                  placeholder="https://..."
-                />
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    name="wasItResolvedSliding"
-                    checked={formData.wasItResolvedSliding}
-                    onChange={handleChange}
-                    className="w-4 h-4 text-notion-accent"
-                  />
-                  <span>Was it resolved? (Sliding)</span>
-                </label>
-              </div>
-            )}
             
             {formData.questBugsExperienced && (
               <div className="mb-6">
@@ -917,6 +769,17 @@ function SurveyForm() {
           </div>
         )}
       </form>
+
+      {/* Bug Details Modal */}
+      <BugDetailsModal
+        bugName={openBugModal}
+        isOpen={!!openBugModal}
+        onClose={() => setOpenBugModal(null)}
+        formData={formData}
+        handleChange={handleChange}
+        handleMultiSelect={handleMultiSelect}
+      />
+
       <Footer />
     </div>
   )

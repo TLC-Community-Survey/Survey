@@ -1,11 +1,32 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import Callout from './Callout'
 import Footer from './Footer'
 import GovernmentBanner from './GovernmentBanner'
+import CookieConsentModal from './CookieConsentModal'
+import { hasConsent } from '../utils/cookies'
 
 function LandingPage() {
   const navigate = useNavigate()
+  const [showCookieModal, setShowCookieModal] = useState(false)
+
+  const handleStartSurvey = () => {
+    if (hasConsent()) {
+      navigate('/survey/form')
+    } else {
+      setShowCookieModal(true)
+    }
+  }
+
+  const handleAcceptCookies = () => {
+    setShowCookieModal(false)
+    navigate('/survey/form')
+  }
+
+  const handleDeclineCookies = () => {
+    setShowCookieModal(false)
+    // User can still browse but won't be able to submit survey without cookies
+  }
   return (
     <div className="min-h-screen">
       <GovernmentBanner />
@@ -52,7 +73,7 @@ function LandingPage() {
 
           <div className="text-center">
             <button
-              onClick={() => navigate('/survey/form')}
+              onClick={handleStartSurvey}
               className="bg-notion-accent hover:bg-orange-600 text-white font-semibold px-8 py-4 rounded-lg transition-colors duration-200 text-lg"
             >
               Start Survey
@@ -73,6 +94,13 @@ function LandingPage() {
           </p>
         </Callout>
       </div>
+
+      <CookieConsentModal
+        isOpen={showCookieModal}
+        onAccept={handleAcceptCookies}
+        onDecline={handleDeclineCookies}
+      />
+
       <Footer />
     </div>
   )

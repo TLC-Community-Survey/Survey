@@ -1,3 +1,6 @@
+# Exclude API routes from SPA redirect
+/api/*   200
+
 # SPA routing - redirect all routes to index.html for client-side routing
 /*    /index.html   200
 

@@ -50,3 +50,6 @@ src/index.js
 
 # Notion exports (should not be in repo)
 notion export/
+
+# Parked term mode code
+ui/term/

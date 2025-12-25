@@ -1,0 +1,129 @@
+/**
+ * Dashboard API service
+ */
+
+const API_BASE = '/api'
+
+/**
+ * Get overall dashboard statistics
+ * @returns {Promise<Object>} Dashboard statistics
+ */
+export async function getOverallStats() {
+  try {
+    const response = await fetch(`${API_BASE}/dashboard?type=overall`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    })
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+
+    // Check if response is actually JSON
+    const contentType = response.headers.get('content-type')
+    if (!contentType || !contentType.includes('application/json')) {
+      // Don't expose HTML content in error messages
+      throw new Error('Dashboard API returned an unexpected response. Make sure you are running with `npm run dev:full` to enable API endpoints.')
+    }
+
+    return await response.json()
+  } catch (error) {
+    console.error('Error fetching overall stats:', error)
+    throw error
+  }
+}
+
+/**
+ * Get user-specific dashboard data
+ * @param {string} discordName - Discord username
+ * @returns {Promise<Object>} User data and overall stats
+ */
+export async function getUserDashboard(discordName) {
+  try {
+    const response = await fetch(`${API_BASE}/dashboard?type=user&user=${encodeURIComponent(discordName)}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    })
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+
+    // Check if response is actually JSON
+    const contentType = response.headers.get('content-type')
+    if (!contentType || !contentType.includes('application/json')) {
+      // Don't expose HTML content in error messages
+      throw new Error('Dashboard API returned an unexpected response. Make sure you are running with `npm run dev:full` to enable API endpoints.')
+    }
+
+    return await response.json()
+  } catch (error) {
+    console.error('Error fetching user dashboard:', error)
+    throw error
+  }
+}
+
+/**
+ * Get available fields for report builder
+ * @returns {Promise<Object>} Available fields
+ */
+export async function getAvailableFields() {
+  try {
+    const response = await fetch(`${API_BASE}/dashboard?type=fields`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    })
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+
+    return await response.json()
+  } catch (error) {
+    console.error('Error fetching available fields:', error)
+    throw error
+  }
+}
+
+/**
+ * Generate custom report
+ * @param {string} field1 - First field to compare
+ * @param {string} field2 - Second field to compare
+ * @param {string|null} filter - Optional filter
+ * @param {string|null} userDiscordName - Optional user Discord name for personal comparison
+ * @returns {Promise<Object>} Report data
+ */
+export async function generateReport(field1, field2, filter = null, userDiscordName = null) {
+  try {
+    let url = `${API_BASE}/dashboard?type=report&field1=${encodeURIComponent(field1)}&field2=${encodeURIComponent(field2)}`
+    if (filter) {
+      url += `&filter=${encodeURIComponent(filter)}`
+    }
+    if (userDiscordName) {
+      url += `&user=${encodeURIComponent(userDiscordName)}`
+    }
+
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    })
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+
+    return await response.json()
+  } catch (error) {
+    console.error('Error generating report:', error)
+    throw error
+  }
+}
+
