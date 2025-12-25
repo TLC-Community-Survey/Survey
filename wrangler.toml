@@ -1,6 +1,12 @@
 name = "tlcsurvey"
 compatibility_date = "2024-01-01"
+
+# Pages configuration
 pages_build_output_dir = "dist"
+
+# Ensure this is a Pages project, not a Worker
+# If you see "main" field below, remove it - that's for Workers
+# main = "src/index.ts"  # ← Remove this if present
 
 [[d1_databases]]
 binding = "DB"
