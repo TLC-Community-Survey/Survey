@@ -1,20 +1,12 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
 import Footer from './Footer'
+import GovernmentBanner from './GovernmentBanner'
 
 function AboutPage() {
   return (
     <div className="min-h-screen">
-      {/* Hero Banner */}
-      <div className="bg-white text-black py-12 px-4">
-        <div className="notion-content">
-          <h1 className="text-5xl md:text-6xl font-bold mb-4">
-            <span className="text-black">THE LAST</span>
-            <br />
-            <span className="text-orange-500">CARETAKER</span>
-          </h1>
-        </div>
-      </div>
+      <GovernmentBanner />
 
       {/* Main Content */}
       <div className="notion-content py-12">
