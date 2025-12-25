@@ -1,6 +1,7 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
 import Callout from './Callout'
+import CollapsibleSection from './CollapsibleSection'
 import Footer from './Footer'
 import GovernmentBanner from './GovernmentBanner'
 
@@ -47,8 +48,7 @@ function HomePage() {
           </div>
         </Callout>
 
-        <section className="my-8">
-          <h3 className="text-2xl font-bold mb-4">Who this survey is for</h3>
+        <CollapsibleSection title="Who this survey is for">
           <p className="text-notion-text-secondary leading-relaxed mb-4">
             This survey is intended for:
           </p>
@@ -61,10 +61,9 @@ function HomePage() {
           <p className="text-notion-text-secondary leading-relaxed">
             You do <strong>not</strong> need technical expertise. Approximate answers are completely acceptable.
           </p>
-        </section>
+        </CollapsibleSection>
 
-        <section className="my-8">
-          <h3 className="text-2xl font-bold mb-4">What data is collected (and why)</h3>
+        <CollapsibleSection title="What data is collected (and why)">
           <p className="text-notion-text-secondary leading-relaxed mb-4">The survey collects:</p>
           <ul className="list-disc list-inside text-notion-text-secondary space-y-2 ml-4 mb-4">
             <li><strong>Basic system information</strong> (CPU, GPU, RAM) → to understand performance differences across hardware</li>
@@ -74,10 +73,9 @@ function HomePage() {
             <li><strong>Optional open-ended feedback</strong> → for anything not covered elsewhere</li>
           </ul>
           <p className="text-notion-text-secondary leading-relaxed">No sensitive personal information is collected.</p>
-        </section>
+        </CollapsibleSection>
 
-        <section className="my-8">
-          <h3 className="text-2xl font-bold mb-4">Identity, duplicates, and editing responses</h3>
+        <CollapsibleSection title="Identity, duplicates, and editing responses">
           <ul className="list-disc list-inside text-notion-text-secondary space-y-2 ml-4 mb-4">
             <li>The survey asks for a <strong>Discord name</strong> only to prevent duplicate submissions and improve overall data quality.</li>
             <li><strong>One response per Discord name</strong> is allowed.</li>
@@ -87,7 +85,7 @@ function HomePage() {
           <p className="text-notion-text-secondary leading-relaxed">
             Discord names are <strong>not used for moderation, tracking, or enforcement</strong>, and are not shared outside the dataset.
           </p>
-        </section>
+        </CollapsibleSection>
 
         <section className="my-8">
           <h3 className="text-2xl font-bold mb-4">Privacy and transparency</h3>
