@@ -16,7 +16,7 @@ function GovernmentBanner() {
                 <img 
                   src="/cocs-logo.png" 
                   alt="COCS Logo" 
-                  className="w-full h-full object-cover scale-110"
+                  className="w-full h-full object-cover scale-150"
                 />
               </div>
             </div>
