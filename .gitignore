@@ -41,3 +41,9 @@ coverage
 dist
 dist-ssr
 
+# Cloudflare auto-generated Worker files (should not be in repo)
+worker.js
+_worker.js
+src/worker.js
+src/index.ts
+src/index.js

@@ -1,12 +1,12 @@
 name = "tlcsurvey"
 compatibility_date = "2024-01-01"
 
-# Pages configuration
+# Pages configuration - this tells Cloudflare this is a Pages project
 pages_build_output_dir = "dist"
 
-# Ensure this is a Pages project, not a Worker
-# If you see "main" field below, remove it - that's for Workers
-# main = "src/index.ts"  # ← Remove this if present
+# Explicitly disable Worker mode
+# Do NOT include a "main" field - that would make it a Worker
+# The /functions directory contains Pages Functions, not a Worker script
 
 [[d1_databases]]
 binding = "DB"
