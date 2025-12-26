@@ -13,6 +13,14 @@ const RATING_OPTIONS = [
   { value: '5', label: '5 - Excellent' },
 ]
 
+const STORY_ENGAGEMENT_OPTIONS = [
+  { value: '1', label: '1 - There is a story?' },
+  { value: '2', label: '2 - Poor' },
+  { value: '3', label: '3 - Story = normal' },
+  { value: '4', label: '4 - Good' },
+  { value: '5', label: '5 - I read all the logs, collected all the memories' },
+]
+
 const DRAFT_STORAGE_KEY = 'story_survey_draft'
 
 function StorySurvey() {
@@ -148,8 +156,11 @@ function StorySurvey() {
 
       <div className="max-w-2xl mx-auto">
         <h2 className="text-4xl font-bold mb-2">Story</h2>
-        <p className="text-notion-text-secondary mb-8">
+        <p className="text-notion-text-secondary mb-4">
           Optional survey • 5 questions • ~2 minutes
+        </p>
+        <p className="text-notion-text-secondary text-sm mb-8 italic">
+          Ratings are based on your feelings compared to typical games you play. 3 = same as usual, 1 = way worse, 5 = best ever.
         </p>
 
         <form onSubmit={handleSubmit} className="bg-notion-bg-secondary rounded-lg p-6 space-y-6">
@@ -160,7 +171,7 @@ function StorySurvey() {
             value={formData.storyEngagement}
             onChange={handleChange}
             placeholder="Select rating..."
-            options={RATING_OPTIONS}
+            options={STORY_ENGAGEMENT_OPTIONS}
           />
 
           <FormField
@@ -183,18 +194,23 @@ function StorySurvey() {
             options={RATING_OPTIONS}
           />
 
-          <FormField
-            label="Character development"
-            name="characterDevelopment"
-            type="select"
-            value={formData.characterDevelopment}
-            onChange={handleChange}
-            placeholder="Select rating..."
-            options={RATING_OPTIONS}
-          />
+          <div className="mb-6">
+            <FormField
+              label="Skills System(s)"
+              name="characterDevelopment"
+              type="select"
+              value={formData.characterDevelopment}
+              onChange={handleChange}
+              placeholder="Select rating..."
+              options={RATING_OPTIONS}
+            />
+            <p className="mt-1 text-sm text-notion-text-secondary">
+              This is about how enjoyable the Enhancement, skills and leveling system are.
+            </p>
+          </div>
 
           <FormField
-            label="Overall score post CU1"
+            label="Overall score"
             name="overallScore"
             type="select"
             value={formData.overallScore}

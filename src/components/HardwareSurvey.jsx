@@ -36,20 +36,26 @@ function HardwareSurvey() {
   const [errors, setErrors] = useState({})
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitStatus, setSubmitStatus] = useState(null)
+  const [errorMessage, setErrorMessage] = useState(null)
 
   useEffect(() => {
     // Scroll to top on mount
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' })
     
-    if (!hasConsent()) {
-      navigate('/survey')
-      return
-    }
-    
-    if (!isSessionValid()) {
-      setSessionCookie()
-    } else {
-      refreshSession()
+    try {
+      if (!hasConsent()) {
+        navigate('/survey')
+        return
+      }
+      
+      if (!isSessionValid()) {
+        setSessionCookie()
+      } else {
+        refreshSession()
+      }
+    } catch (error) {
+      // Log cookie errors but don't block form access
+      console.warn('Cookie operation failed (may be expected in private windows):', error)
     }
   }, [navigate])
 
@@ -93,6 +99,7 @@ function HardwareSurvey() {
     
     setIsSubmitting(true)
     setSubmitStatus(null)
+    setErrorMessage(null)
     
     try {
       const submissionData = {
@@ -116,7 +123,16 @@ function HardwareSurvey() {
       setSubmitStatus('success')
     } catch (error) {
       console.error('Submission error:', error)
+      // Store error details for display
+      const errMsg = error.message || 'Unknown error occurred'
+      setErrorMessage(errMsg)
       setSubmitStatus('error')
+      // Log more details for debugging
+      console.error('Error details:', {
+        message: errMsg,
+        name: error.name,
+        stack: error.stack
+      })
     } finally {
       setIsSubmitting(false)
     }
@@ -243,7 +259,15 @@ function HardwareSurvey() {
           {submitStatus === 'error' && (
             <div className="bg-red-900/20 border border-red-500 rounded-lg p-4 text-red-400">
               <p className="font-semibold mb-2">Error submitting survey</p>
-              <p className="text-sm">Please check your connection and try again.</p>
+              <p className="text-sm">
+                {errorMessage || 'Please check your connection and try again.'}
+              </p>
+              {process.env.NODE_ENV === 'development' && errorMessage && (
+                <details className="mt-2 text-xs opacity-75">
+                  <summary className="cursor-pointer">Technical details</summary>
+                  <pre className="mt-2 whitespace-pre-wrap">{errorMessage}</pre>
+                </details>
+              )}
             </div>
           )}
         </form>

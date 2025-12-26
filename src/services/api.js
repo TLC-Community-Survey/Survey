@@ -20,13 +20,31 @@ export async function submitSurvey(formData) {
     })
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: 'Failed to submit survey' }))
-      throw new Error(error.message || `HTTP error! status: ${response.status}`)
+      let errorMessage = `HTTP error! status: ${response.status}`
+      try {
+        const error = await response.json()
+        errorMessage = error.message || error.error || errorMessage
+      } catch (e) {
+        // If response is not JSON, try to get text
+        try {
+          const text = await response.text()
+          if (text && text.length < 200) {
+            errorMessage = text
+          }
+        } catch (textError) {
+          // Ignore text parsing errors
+        }
+      }
+      throw new Error(errorMessage)
     }
 
     return await response.json()
   } catch (error) {
     console.error('Error submitting survey:', error)
+    // Enhance error message for network errors
+    if (error.name === 'TypeError' && error.message.includes('fetch')) {
+      throw new Error('Network error: Unable to connect to the server. Please check your internet connection and try again.')
+    }
     throw error
   }
 }

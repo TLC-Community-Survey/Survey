@@ -164,8 +164,11 @@ function QuestSurvey() {
 
       <div className="max-w-2xl mx-auto">
         <h2 className="text-4xl font-bold mb-2">Quests</h2>
-        <p className="text-notion-text-secondary mb-8">
+        <p className="text-notion-text-secondary mb-4">
           Optional survey • 5 questions • ~2 minutes
+        </p>
+        <p className="text-notion-text-secondary text-sm mb-8 italic">
+          Ratings are based on your feelings compared to typical games you play. 3 = same as usual, 1 = way worse, 5 = best ever.
         </p>
 
         <form onSubmit={handleSubmit} className="bg-notion-bg-secondary rounded-lg p-6 space-y-6">

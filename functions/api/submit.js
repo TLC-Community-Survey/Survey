@@ -458,8 +458,40 @@ export async function onRequestPost(context) {
     )
   } catch (error) {
     console.error('Error processing submission:', error)
+    console.error('Error details:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name
+    })
+    
+    // Provide more helpful error messages for common issues
+    let errorMessage = 'Internal server error'
+    let errorDetails = error.message || 'Unknown error'
+    
+    // Check for database constraint violations
+    if (error.message && (
+      error.message.includes('NOT NULL constraint') ||
+      error.message.includes('constraint failed') ||
+      error.message.includes('UNIQUE constraint')
+    )) {
+      errorMessage = 'Database constraint error'
+      errorDetails = 'A required field is missing or a duplicate entry was detected. Please check your submission data.'
+    } else if (error.message && error.message.includes('no such table')) {
+      errorMessage = 'Database schema error'
+      errorDetails = 'Database table not found. Please run migrations: wrangler d1 execute tlc-survey-db --file=./migrations/0001_init.sql'
+    } else if (error.message && error.message.includes('no such column')) {
+      errorMessage = 'Database schema error'
+      errorDetails = 'Database column not found. Please run migrations to update the schema.'
+    } else if (error.message && error.message.length < 200) {
+      // Include the error message if it's short and doesn't contain sensitive info
+      errorDetails = error.message
+    }
+    
     return new Response(
-      JSON.stringify({ error: 'Internal server error', details: error.message }),
+      JSON.stringify({ 
+        error: errorMessage,
+        message: errorDetails
+      }),
       { 
         status: 500,
         headers: { 
