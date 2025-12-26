@@ -73,8 +73,8 @@ export async function onRequestPost(context) {
       // Insert personal data
       const result = await env.DB.prepare(
         `INSERT INTO survey_responses (
-          discord_name, age, cpu, gpu, ram, tos, response_id, submitted_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+          discord_name, age, cpu, gpu, ram, tos, response_id, playtime, submitted_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
       ).bind(
         formData.discordName || null,
         age,
@@ -83,6 +83,7 @@ export async function onRequestPost(context) {
         null,
         formData.tos ? 1 : 0,
         responseId,
+        formData.playtime || null,
         new Date().toISOString()
       ).run()
 
@@ -112,8 +113,8 @@ export async function onRequestPost(context) {
         `INSERT INTO survey_responses (
           discord_name, age, cpu, gpu, ram, tos, response_id, storage,
           avg_fps_pre_cu1, avg_fps_post_cu1, pre_cu1_vs_post, overall_client_stability,
-          playtime, submitted_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+          submitted_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
       ).bind(
         null,
         null, // age not required
@@ -127,7 +128,6 @@ export async function onRequestPost(context) {
         formData.avgFpsPostCu1 || null,
         formData.performanceChange || null,
         formData.overallStability ? parseInt(formData.overallStability) : null,
-        formData.playtime || null,
         new Date().toISOString()
       ).run()
 

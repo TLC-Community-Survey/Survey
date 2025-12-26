@@ -6,8 +6,6 @@ import { submitSurvey } from '../services/api'
 import { hasConsent, refreshSession, setSessionCookie, isSessionValid } from '../utils/cookies'
 
 const QUEST_PROGRESS_OPTIONS = [
-  { value: 'not_started', label: 'Not started' },
-  { value: 'in_progress', label: 'In progress' },
   { value: 'completed_main', label: 'Completed main story' },
   { value: 'completed_all', label: 'Completed all quests' },
 ]

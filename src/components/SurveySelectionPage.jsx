@@ -234,8 +234,8 @@ function SurveySelectionPage() {
               <div className="flex items-center justify-between mb-4">
                 <div>
                   <h4 className="text-xl font-bold mb-2">Personal Data</h4>
-                  <p className="text-sm text-notion-text-secondary">Age, Discord name, and terms</p>
-                  <p className="text-xs text-notion-text-secondary mt-1">3 questions</p>
+                  <p className="text-sm text-notion-text-secondary">Age, Discord name, playtime, and terms</p>
+                  <p className="text-xs text-notion-text-secondary mt-1">4 questions</p>
                 </div>
                 {isCompleted('personal') && (
                   <span className="text-green-500">

@@ -43,7 +43,6 @@ function PerformanceSurvey() {
         avgFpsPostCu1: '',
         performanceChange: '',
         overallStability: '',
-        playtime: '',
       }
     } catch {
       return {
@@ -51,7 +50,6 @@ function PerformanceSurvey() {
         avgFpsPostCu1: '',
         performanceChange: '',
         overallStability: '',
-        playtime: '',
       }
     }
   })
@@ -167,7 +165,7 @@ function PerformanceSurvey() {
       <div className="max-w-2xl mx-auto">
         <h2 className="text-4xl font-bold mb-2">Performance</h2>
         <p className="text-notion-text-secondary mb-4">
-          Required survey • 5 questions • ~2 minutes
+          Required survey • 4 questions • ~2 minutes
         </p>
         <p className="text-sm text-notion-text-secondary mb-8 bg-notion-bg-secondary rounded-lg p-4 border border-notion-border">
           <strong>Note:</strong> Approximate FPS numbers are perfectly fine. The more accurate you can be, the better, but estimates are welcome!
@@ -252,22 +250,6 @@ function PerformanceSurvey() {
             onChange={handleChange}
             placeholder="Select rating..."
             options={STABILITY_OPTIONS}
-          />
-
-          <FormField
-            label="Approximate playtime (hours)"
-            name="playtime"
-            type="select"
-            value={formData.playtime}
-            onChange={handleChange}
-            placeholder="Select range..."
-            options={[
-              { value: '0-10', label: '0-10 hours' },
-              { value: '11-25', label: '11-25 hours' },
-              { value: '26-50', label: '26-50 hours' },
-              { value: '51-100', label: '51-100 hours' },
-              { value: '100+', label: '100+ hours' },
-            ]}
           />
 
           <div className="flex justify-end gap-4 pt-6">

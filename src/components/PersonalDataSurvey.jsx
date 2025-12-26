@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import FormField from './FormField'
 import Footer from './Footer'
 import { submitSurvey } from '../services/api'
@@ -25,12 +25,14 @@ function PersonalDataSurvey() {
       return saved ? JSON.parse(saved) : {
         age: '',
         discordName: '',
+        playtime: '',
         tos: false,
       }
     } catch {
       return {
         age: '',
         discordName: '',
+        playtime: '',
         tos: false,
       }
     }
@@ -96,6 +98,7 @@ function PersonalDataSurvey() {
       const submissionData = {
         age: formData.age,
         discordName: formData.discordName || null,
+        playtime: formData.playtime || null,
         tos: formData.tos,
         surveyType: 'personal',
       }
@@ -164,7 +167,7 @@ function PersonalDataSurvey() {
       <div className="max-w-2xl mx-auto">
         <h2 className="text-4xl font-bold mb-2">Personal Data</h2>
         <p className="text-notion-text-secondary mb-8">
-          Optional survey • 3 questions • ~1 minute
+          Optional survey • 4 questions • ~1 minute
         </p>
 
         <form onSubmit={handleSubmit} className="bg-notion-bg-secondary rounded-lg p-6 space-y-6">
@@ -202,6 +205,22 @@ function PersonalDataSurvey() {
             placeholder="Your Discord username (optional)"
           />
 
+          <FormField
+            label="Approximate playtime (hours)"
+            name="playtime"
+            type="select"
+            value={formData.playtime}
+            onChange={handleChange}
+            placeholder="Select range..."
+            options={[
+              { value: '0-10', label: '0-10 hours' },
+              { value: '11-25', label: '11-25 hours' },
+              { value: '26-50', label: '26-50 hours' },
+              { value: '51-100', label: '51-100 hours' },
+              { value: '100+', label: '100+ hours' },
+            ]}
+          />
+
           <div className="mb-6">
             <label className="flex items-center gap-2 cursor-pointer">
               <input
@@ -212,7 +231,7 @@ function PersonalDataSurvey() {
                 className="w-4 h-4 text-notion-accent focus:ring-notion-accent"
               />
               <span className="text-notion-text">
-                I agree to the Terms of Service and am 16 years or older <span className="text-red-500">*</span>
+                I agree to the <Link to="/info" className="text-notion-accent hover:underline" target="_blank" rel="noopener noreferrer">Terms of Service</Link> and am 16 years or older <span className="text-red-500">*</span>
               </span>
             </label>
             {errors.tos && <p className="mt-1 text-sm text-red-500">{errors.tos}</p>}
