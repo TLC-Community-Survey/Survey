@@ -15,8 +15,12 @@ export async function onRequestGet(context) {
     
     // Check if database is available
     if (!db) {
+      console.error('D1 database binding not found. Check Cloudflare Pages Settings → Functions → D1 Database bindings.')
       return new Response(
-        JSON.stringify({ error: 'Database not available', message: 'D1 database binding is not configured' }),
+        JSON.stringify({ 
+          error: 'Database Configuration Error', 
+          message: 'D1 database binding is not configured. Please check Cloudflare Pages Settings → Functions → D1 Database bindings and ensure the binding name is "DB".'
+        }),
         { 
           status: 500,
           headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
@@ -96,11 +100,36 @@ export async function onRequestGet(context) {
     )
   } catch (error) {
     console.error('Error processing dashboard request:', error)
-    // Don't expose stack traces or internal details to clients
+    console.error('Error details:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name
+    })
+    
+    // Provide more helpful error messages for common issues
+    let errorMessage = 'An error occurred while processing your request. Please try again later.'
+    let errorType = 'Internal server error'
+    
+    const errorMsg = error.message || ''
+    
+    if (errorMsg.includes('Database not available') || errorMsg.includes('D1')) {
+      errorType = 'Database Configuration Error'
+      errorMessage = 'D1 database binding is not configured. Please check Cloudflare Pages Settings → Functions → D1 Database bindings.'
+    } else if (errorMsg.includes('no such table') || errorMsg.includes('no such column')) {
+      errorType = 'Database Schema Error'
+      errorMessage = 'Database table or column not found. Please run the migration: wrangler d1 execute tlc-survey-db --file=./migrations/0001_init.sql'
+    } else if (errorMsg.includes('syntax error')) {
+      errorType = 'Database Query Error'
+      errorMessage = 'Database query syntax error. Please check the server logs for details.'
+    } else if (errorMsg.length > 0 && errorMsg.length < 200) {
+      // Include the error message if it's short and doesn't contain sensitive info
+      errorMessage = errorMsg
+    }
+    
     return new Response(
       JSON.stringify({ 
-        error: 'Internal server error',
-        message: 'An error occurred while processing your request. Please try again later.'
+        error: errorType,
+        message: errorMessage
       }),
       { 
         status: 500,
@@ -159,16 +188,21 @@ async function getOverallStats(db) {
       totalResponses: totalResponses?.count || 0,
       avgFpsPre: Math.round(avgFpsPre?.avg || 0),
       avgFpsPost: Math.round(avgFpsPost?.avg || 0),
-      performanceComparison: performanceComparison.results || [],
+      performanceComparison: performanceComparison?.results || [],
       avgStability: Math.round((avgStability?.avg || 0) * 10) / 10,
       avgOverallScore: Math.round((avgOverallScore?.avg || 0) * 10) / 10,
       avgCrashes: Math.round((avgCrashes?.avg || 0) * 10) / 10,
-      bugStats,
-      questRatings,
-      hardwareStats,
+      bugStats: bugStats || {},
+      questRatings: questRatings || {},
+      hardwareStats: hardwareStats || { topCpus: [], topGpus: [], topRams: [], avgPlaytime: 0 },
     }
   } catch (error) {
     console.error('Error in getOverallStats:', error)
+    console.error('Error details:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name
+    })
     throw error
   }
 }
@@ -177,83 +211,119 @@ async function getOverallStats(db) {
  * Get bug statistics
  */
 async function getBugStatistics(db) {
-  const allBugs = await db.prepare(
-    'SELECT common_bugs_experienced FROM survey_responses WHERE common_bugs_experienced IS NOT NULL'
-  ).all()
-  
-  const bugCounts = {}
-  const bugNames = ['Boat Stuck', 'Boat Sinking/Flying', 'Sliding buildings on boat', 'Elevator issues', 'Other']
-  
-  bugNames.forEach(bug => bugCounts[bug] = 0)
-  
-  allBugs.results.forEach(row => {
-    try {
-      const bugs = JSON.parse(row.common_bugs_experienced || '[]')
-      bugs.forEach(bug => {
-        if (bugCounts.hasOwnProperty(bug)) {
-          bugCounts[bug]++
+  try {
+    const allBugs = await db.prepare(
+      'SELECT common_bugs_experienced FROM survey_responses WHERE common_bugs_experienced IS NOT NULL'
+    ).all()
+    
+    const bugCounts = {}
+    const bugNames = ['Boat Stuck', 'Boat Sinking/Flying', 'Sliding buildings on boat', 'Elevator issues', 'Other']
+    
+    bugNames.forEach(bug => bugCounts[bug] = 0)
+    
+    if (allBugs?.results && Array.isArray(allBugs.results)) {
+      allBugs.results.forEach(row => {
+        try {
+          const bugs = JSON.parse(row.common_bugs_experienced || '[]')
+          if (Array.isArray(bugs)) {
+            bugs.forEach(bug => {
+              if (bugCounts.hasOwnProperty(bug)) {
+                bugCounts[bug]++
+              }
+            })
+          }
+        } catch (e) {
+          // Skip invalid JSON
         }
       })
-    } catch (e) {
-      // Skip invalid JSON
     }
-  })
-  
-  return bugCounts
+    
+    return bugCounts
+  } catch (error) {
+    console.error('Error in getBugStatistics:', error)
+    // Return empty bug counts on error
+    return {
+      'Boat Stuck': 0,
+      'Boat Sinking/Flying': 0,
+      'Sliding buildings on boat': 0,
+      'Elevator issues': 0,
+      'Other': 0
+    }
+  }
 }
 
 /**
  * Get quest ratings
  */
 async function getQuestRatings(db) {
-  const quests = [
-    { field: 'pre_cu1_quests_rating', name: 'Pre CU1 Quests' },
-    { field: 'mother_rating', name: 'Mother' },
-    { field: 'the_one_before_me_rating', name: 'The One Before Me' },
-    { field: 'the_warehouse_rating', name: 'The Warehouse' },
-    { field: 'whispers_within_rating', name: 'Whispers Within' },
-    { field: 'smile_at_dark_rating', name: 'Smile at Dark' },
-    { field: 'story_engagement', name: 'Story Engagement' },
-    { field: 'overall_quest_story_rating', name: 'Overall Quest/Story' },
-  ]
-  
-  const ratings = {}
-  
-  for (const quest of quests) {
-    const result = await db.prepare(
-      `SELECT AVG(${quest.field}) as avg FROM survey_responses WHERE ${quest.field} IS NOT NULL`
-    ).first()
-    ratings[quest.name] = Math.round((result?.avg || 0) * 10) / 10
+  try {
+    const quests = [
+      { field: 'pre_cu1_quests_rating', name: 'Pre CU1 Quests' },
+      { field: 'mother_rating', name: 'Mother' },
+      { field: 'the_one_before_me_rating', name: 'The One Before Me' },
+      { field: 'the_warehouse_rating', name: 'The Warehouse' },
+      { field: 'whispers_within_rating', name: 'Whispers Within' },
+      { field: 'smile_at_dark_rating', name: 'Smile at Dark' },
+      { field: 'story_engagement', name: 'Story Engagement' },
+      { field: 'overall_quest_story_rating', name: 'Overall Quest/Story' },
+    ]
+    
+    const ratings = {}
+    
+    for (const quest of quests) {
+      try {
+        const result = await db.prepare(
+          `SELECT AVG(${quest.field}) as avg FROM survey_responses WHERE ${quest.field} IS NOT NULL`
+        ).first()
+        ratings[quest.name] = Math.round((result?.avg || 0) * 10) / 10
+      } catch (error) {
+        console.error(`Error fetching quest rating for ${quest.name}:`, error)
+        ratings[quest.name] = 0
+      }
+    }
+    
+    return ratings
+  } catch (error) {
+    console.error('Error in getQuestRatings:', error)
+    return {}
   }
-  
-  return ratings
 }
 
 /**
  * Get hardware statistics
  */
 async function getHardwareStats(db) {
-  const cpuStats = await db.prepare(
-    'SELECT cpu, COUNT(*) as count FROM survey_responses WHERE cpu IS NOT NULL GROUP BY cpu ORDER BY count DESC LIMIT 10'
-  ).all()
-  
-  const gpuStats = await db.prepare(
-    'SELECT gpu, COUNT(*) as count FROM survey_responses WHERE gpu IS NOT NULL GROUP BY gpu ORDER BY count DESC LIMIT 10'
-  ).all()
-  
-  const ramStats = await db.prepare(
-    'SELECT ram, COUNT(*) as count FROM survey_responses WHERE ram IS NOT NULL GROUP BY ram ORDER BY count DESC LIMIT 10'
-  ).all()
-  
-  const avgPlaytime = await db.prepare(
-    'SELECT AVG(playtime) as avg FROM survey_responses WHERE playtime IS NOT NULL'
-  ).first()
-  
-  return {
-    topCpus: cpuStats.results || [],
-    topGpus: gpuStats.results || [],
-    topRams: ramStats.results || [],
-    avgPlaytime: Math.round(avgPlaytime?.avg || 0),
+  try {
+    const cpuStats = await db.prepare(
+      'SELECT cpu, COUNT(*) as count FROM survey_responses WHERE cpu IS NOT NULL GROUP BY cpu ORDER BY count DESC LIMIT 10'
+    ).all()
+    
+    const gpuStats = await db.prepare(
+      'SELECT gpu, COUNT(*) as count FROM survey_responses WHERE gpu IS NOT NULL GROUP BY gpu ORDER BY count DESC LIMIT 10'
+    ).all()
+    
+    const ramStats = await db.prepare(
+      'SELECT ram, COUNT(*) as count FROM survey_responses WHERE ram IS NOT NULL GROUP BY ram ORDER BY count DESC LIMIT 10'
+    ).all()
+    
+    const avgPlaytime = await db.prepare(
+      'SELECT AVG(playtime) as avg FROM survey_responses WHERE playtime IS NOT NULL'
+    ).first()
+    
+    return {
+      topCpus: cpuStats?.results || [],
+      topGpus: gpuStats?.results || [],
+      topRams: ramStats?.results || [],
+      avgPlaytime: Math.round(avgPlaytime?.avg || 0),
+    }
+  } catch (error) {
+    console.error('Error in getHardwareStats:', error)
+    return {
+      topCpus: [],
+      topGpus: [],
+      topRams: [],
+      avgPlaytime: 0
+    }
   }
 }
 
@@ -261,17 +331,22 @@ async function getHardwareStats(db) {
  * Get user-specific data
  */
 async function getUserData(db, discordName) {
-  const userData = await db.prepare(
-    'SELECT * FROM survey_responses WHERE discord_name = ? ORDER BY submitted_at DESC LIMIT 1'
-  ).bind(discordName).first()
-  
-  if (!userData) {
+  try {
+    const userData = await db.prepare(
+      'SELECT * FROM survey_responses WHERE discord_name = ? ORDER BY submitted_at DESC LIMIT 1'
+    ).bind(discordName).first()
+    
+    if (!userData) {
+      return null
+    }
+    
+    // Remove discord_name from response for privacy
+    const { discord_name, ...data } = userData
+    return data
+  } catch (error) {
+    console.error('Error in getUserData:', error)
     return null
   }
-  
-  // Remove discord_name from response for privacy
-  const { discord_name, ...data } = userData
-  return data
 }
 
 /**

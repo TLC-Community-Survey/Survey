@@ -17,18 +17,22 @@ export async function getOverallStats() {
       },
     })
 
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`)
-    }
-
-    // Check if response is actually JSON
+    // Check if response is actually JSON first
     const contentType = response.headers.get('content-type')
     if (!contentType || !contentType.includes('application/json')) {
       // Don't expose HTML content in error messages
       throw new Error('Dashboard API returned an unexpected response. Make sure you are running with `npm run dev:full` to enable API endpoints.')
     }
 
-    return await response.json()
+    const data = await response.json()
+
+    if (!response.ok) {
+      // Handle API error responses
+      const errorMessage = data.message || data.error || `HTTP error! status: ${response.status}`
+      throw new Error(errorMessage)
+    }
+
+    return data
   } catch (error) {
     console.error('Error fetching overall stats:', error)
     throw error
@@ -49,18 +53,22 @@ export async function getUserDashboard(discordName) {
       },
     })
 
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`)
-    }
-
-    // Check if response is actually JSON
+    // Check if response is actually JSON first
     const contentType = response.headers.get('content-type')
     if (!contentType || !contentType.includes('application/json')) {
       // Don't expose HTML content in error messages
       throw new Error('Dashboard API returned an unexpected response. Make sure you are running with `npm run dev:full` to enable API endpoints.')
     }
 
-    return await response.json()
+    const data = await response.json()
+
+    if (!response.ok) {
+      // Handle API error responses
+      const errorMessage = data.message || data.error || `HTTP error! status: ${response.status}`
+      throw new Error(errorMessage)
+    }
+
+    return data
   } catch (error) {
     console.error('Error fetching user dashboard:', error)
     throw error

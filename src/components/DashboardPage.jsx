@@ -147,20 +147,22 @@ function DashboardPage() {
         </div>
 
         {/* Performance Comparison */}
-        <div className="bg-notion-surface rounded-lg p-6 mb-8">
-          <h2 className="text-2xl font-semibold text-notion-text mb-4">Performance Comparison</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {stats.performanceComparison.map((item) => (
-              <div key={item.pre_cu1_vs_post} className="bg-notion-bg rounded-lg p-4">
-                <div className="text-sm text-notion-text-muted mb-1">{item.pre_cu1_vs_post}</div>
-                <div className="text-2xl font-bold text-notion-text">{item.count}</div>
-                <div className="text-xs text-notion-text-muted mt-1">
-                  {((item.count / stats.totalResponses) * 100).toFixed(1)}%
+        {stats.performanceComparison && stats.performanceComparison.length > 0 && (
+          <div className="bg-notion-surface rounded-lg p-6 mb-8">
+            <h2 className="text-2xl font-semibold text-notion-text mb-4">Performance Comparison</h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {stats.performanceComparison.map((item) => (
+                <div key={item.pre_cu1_vs_post} className="bg-notion-bg rounded-lg p-4">
+                  <div className="text-sm text-notion-text-muted mb-1">{item.pre_cu1_vs_post}</div>
+                  <div className="text-2xl font-bold text-notion-text">{item.count}</div>
+                  <div className="text-xs text-notion-text-muted mt-1">
+                    {stats.totalResponses > 0 ? ((item.count / stats.totalResponses) * 100).toFixed(1) : 0}%
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* User Comparison (if authenticated) */}
         {auth && userData && (
@@ -196,27 +198,29 @@ function DashboardPage() {
         )}
 
         {/* Bug Statistics */}
-        <div className="bg-notion-surface rounded-lg p-6 mb-8">
-          <h2 className="text-2xl font-semibold text-notion-text mb-4">Common Bugs Experienced</h2>
-          <div className="space-y-2">
-            {Object.entries(stats.bugStats).map(([bug, count]) => (
-              <div key={bug} className="flex items-center justify-between">
-                <span className="text-notion-text">{bug}</span>
-                <div className="flex items-center gap-4">
-                  <div className="w-32 bg-notion-bg rounded-full h-2 overflow-hidden">
-                    <div
-                      className="bg-notion-blue h-full transition-all"
-                      style={{ width: `${(count / stats.totalResponses) * 100}%` }}
-                    />
+        {stats.bugStats && Object.keys(stats.bugStats).length > 0 && (
+          <div className="bg-notion-surface rounded-lg p-6 mb-8">
+            <h2 className="text-2xl font-semibold text-notion-text mb-4">Common Bugs Experienced</h2>
+            <div className="space-y-2">
+              {Object.entries(stats.bugStats).map(([bug, count]) => (
+                <div key={bug} className="flex items-center justify-between">
+                  <span className="text-notion-text">{bug}</span>
+                  <div className="flex items-center gap-4">
+                    <div className="w-32 bg-notion-bg rounded-full h-2 overflow-hidden">
+                      <div
+                        className="bg-notion-blue h-full transition-all"
+                        style={{ width: `${stats.totalResponses > 0 ? (count / stats.totalResponses) * 100 : 0}%` }}
+                      />
+                    </div>
+                    <span className="text-notion-text font-medium w-16 text-right">
+                      {count} ({stats.totalResponses > 0 ? ((count / stats.totalResponses) * 100).toFixed(1) : 0}%)
+                    </span>
                   </div>
-                  <span className="text-notion-text font-medium w-16 text-right">
-                    {count} ({((count / stats.totalResponses) * 100).toFixed(1)}%)
-                  </span>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Quest Ratings */}
         {Object.keys(stats.questRatings).length > 0 && (
@@ -234,37 +238,47 @@ function DashboardPage() {
         )}
 
         {/* Hardware Stats */}
-        <div className="bg-notion-surface rounded-lg p-6 mb-8">
-          <h2 className="text-2xl font-semibold text-notion-text mb-4">Hardware Statistics</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div>
-              <h3 className="text-lg font-medium text-notion-text mb-3">Top CPUs</h3>
-              <div className="space-y-2">
-                {stats.hardwareStats.topCpus.slice(0, 5).map((cpu) => (
-                  <div key={cpu.cpu} className="flex justify-between text-sm">
-                    <span className="text-notion-text">{cpu.cpu}</span>
-                    <span className="text-notion-text-muted">{cpu.count}</span>
-                  </div>
-                ))}
+        {stats.hardwareStats && (
+          <div className="bg-notion-surface rounded-lg p-6 mb-8">
+            <h2 className="text-2xl font-semibold text-notion-text mb-4">Hardware Statistics</h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div>
+                <h3 className="text-lg font-medium text-notion-text mb-3">Top CPUs</h3>
+                <div className="space-y-2">
+                  {stats.hardwareStats.topCpus && stats.hardwareStats.topCpus.length > 0 ? (
+                    stats.hardwareStats.topCpus.slice(0, 5).map((cpu) => (
+                      <div key={cpu.cpu} className="flex justify-between text-sm">
+                        <span className="text-notion-text">{cpu.cpu}</span>
+                        <span className="text-notion-text-muted">{cpu.count}</span>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-sm text-notion-text-muted">No data available</div>
+                  )}
+                </div>
               </div>
-            </div>
-            <div>
-              <h3 className="text-lg font-medium text-notion-text mb-3">Top GPUs</h3>
-              <div className="space-y-2">
-                {stats.hardwareStats.topGpus.slice(0, 5).map((gpu) => (
-                  <div key={gpu.gpu} className="flex justify-between text-sm">
-                    <span className="text-notion-text">{gpu.gpu}</span>
-                    <span className="text-notion-text-muted">{gpu.count}</span>
-                  </div>
-                ))}
+              <div>
+                <h3 className="text-lg font-medium text-notion-text mb-3">Top GPUs</h3>
+                <div className="space-y-2">
+                  {stats.hardwareStats.topGpus && stats.hardwareStats.topGpus.length > 0 ? (
+                    stats.hardwareStats.topGpus.slice(0, 5).map((gpu) => (
+                      <div key={gpu.gpu} className="flex justify-between text-sm">
+                        <span className="text-notion-text">{gpu.gpu}</span>
+                        <span className="text-notion-text-muted">{gpu.count}</span>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-sm text-notion-text-muted">No data available</div>
+                  )}
+                </div>
               </div>
-            </div>
-            <div>
-              <h3 className="text-lg font-medium text-notion-text mb-3">Average Playtime</h3>
-              <div className="text-3xl font-bold text-notion-text">{stats.hardwareStats.avgPlaytime} hours</div>
+              <div>
+                <h3 className="text-lg font-medium text-notion-text mb-3">Average Playtime</h3>
+                <div className="text-3xl font-bold text-notion-text">{stats.hardwareStats.avgPlaytime || 0} hours</div>
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
         {/* Report Builder Toggle */}
         <div className="mb-8">
