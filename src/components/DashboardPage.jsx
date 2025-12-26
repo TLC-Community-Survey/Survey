@@ -1,19 +1,13 @@
 import React, { useState, useEffect } from 'react'
-import { getOverallStats, getUserDashboard } from '../services/dashboard'
-import { getAuth, isAuthenticated, clearAuth } from '../services/auth'
+import { getOverallStats } from '../services/dashboard'
 import ReportBuilder from './ReportBuilder'
-import AuthModal from './AuthModal'
 import Footer from './Footer'
 
 function DashboardPage() {
   const [loading, setLoading] = useState(true)
   const [stats, setStats] = useState(null)
-  const [userData, setUserData] = useState(null)
   const [error, setError] = useState(null)
   const [showReportBuilder, setShowReportBuilder] = useState(false)
-  const [showAuthModal, setShowAuthModal] = useState(false)
-  const auth = isAuthenticated()
-  const userDiscordName = getAuth()
 
   useEffect(() => {
     loadDashboardData()
@@ -24,15 +18,8 @@ function DashboardPage() {
       setLoading(true)
       setError(null)
       
-      if (auth && userDiscordName) {
-        const data = await getUserDashboard(userDiscordName)
-        setStats(data.overall)
-        setUserData(data.user)
-      } else {
-        const data = await getOverallStats()
-        setStats(data)
-        setUserData(null)
-      }
+      const data = await getOverallStats()
+      setStats(data)
     } catch (err) {
       console.error('Error loading dashboard:', err)
       let errorMessage = 'Failed to load dashboard data. Please try again later.'
@@ -90,33 +77,11 @@ function DashboardPage() {
   return (
     <div className="min-h-screen bg-notion-bg">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8 flex items-center justify-between">
-          <div>
-            <h1 className="text-4xl font-bold text-notion-text mb-2">Survey Dashboard</h1>
-            <p className="text-notion-text-muted">
-              {auth ? 'Your personalized dashboard with comparison data' : 'Overall survey statistics'}
-            </p>
-          </div>
-          <div>
-            {auth ? (
-              <button
-                onClick={() => {
-                  clearAuth()
-                  window.location.reload()
-                }}
-                className="px-4 py-2 border border-notion-border rounded-lg text-notion-text hover:bg-notion-bg transition-colors text-sm"
-              >
-                Sign Out
-              </button>
-            ) : (
-              <button
-                onClick={() => setShowAuthModal(true)}
-                className="px-4 py-2 bg-notion-blue text-white rounded-lg hover:bg-notion-blue-hover transition-colors text-sm"
-              >
-                Sign In
-              </button>
-            )}
-          </div>
+        <div className="mb-8">
+          <h1 className="text-4xl font-bold text-notion-text mb-2">Survey Dashboard</h1>
+          <p className="text-notion-text-muted">
+            Overall survey statistics and aggregated data
+          </p>
         </div>
 
         {/* Basic Stats Grid */}
@@ -164,38 +129,6 @@ function DashboardPage() {
           </div>
         )}
 
-        {/* User Comparison (if authenticated) */}
-        {auth && userData && (
-          <div className="bg-notion-surface rounded-lg p-6 mb-8">
-            <h2 className="text-2xl font-semibold text-notion-text mb-4">Your Response vs Average</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <ComparisonItem
-                label="FPS Pre CU1"
-                userValue={userData.avg_fps_pre_cu1}
-                avgValue={stats.avgFpsPre}
-                unit=" FPS"
-              />
-              <ComparisonItem
-                label="FPS Post CU1"
-                userValue={userData.avg_fps_post_cu1}
-                avgValue={stats.avgFpsPost}
-                unit=" FPS"
-              />
-              <ComparisonItem
-                label="Client Stability"
-                userValue={userData.overall_client_stability}
-                avgValue={stats.avgStability}
-                unit="/5"
-              />
-              <ComparisonItem
-                label="Overall Score"
-                userValue={userData.overall_score_post_cu1}
-                avgValue={stats.avgOverallScore}
-                unit="/5"
-              />
-            </div>
-          </div>
-        )}
 
         {/* Bug Statistics */}
         {stats.bugStats && Object.keys(stats.bugStats).length > 0 && (
@@ -293,20 +226,10 @@ function DashboardPage() {
         {/* Report Builder */}
         {showReportBuilder && (
           <div className="mb-8">
-            <ReportBuilder userDiscordName={auth ? userDiscordName : null} />
+            <ReportBuilder />
           </div>
         )}
       </div>
-
-      {/* Auth Modal */}
-      <AuthModal
-        isOpen={showAuthModal}
-        onClose={() => setShowAuthModal(false)}
-        onSuccess={() => {
-          setShowAuthModal(false)
-          loadDashboardData()
-        }}
-      />
 
       <Footer />
     </div>
@@ -322,30 +245,6 @@ function StatCard({ title, value, suffix = '', icon }) {
       </div>
       <div className="text-3xl font-bold text-notion-text">
         {value !== null && value !== undefined ? value : 'N/A'}{suffix}
-      </div>
-    </div>
-  )
-}
-
-function ComparisonItem({ label, userValue, avgValue, unit = '' }) {
-  if (userValue === null || userValue === undefined) {
-    return null
-  }
-
-  const diff = userValue - avgValue
-  const diffPercent = avgValue !== 0 ? ((diff / avgValue) * 100).toFixed(1) : 0
-
-  return (
-    <div className="bg-notion-bg rounded-lg p-4">
-      <div className="text-sm text-notion-text-muted mb-2">{label}</div>
-      <div className="flex items-baseline gap-4">
-        <div>
-          <div className="text-xl font-bold text-notion-text">You: {userValue}{unit}</div>
-          <div className="text-sm text-notion-text-muted">Avg: {avgValue}{unit}</div>
-        </div>
-        <div className={`text-lg font-semibold ${diff >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-          {diff >= 0 ? '+' : ''}{diff.toFixed(1)}{unit} ({diffPercent >= 0 ? '+' : ''}{diffPercent}%)
-        </div>
       </div>
     </div>
   )

@@ -10,10 +10,10 @@ export async function onRequestPost(context) {
     const formData = await request.json()
     
     // Validate required fields
-    if (!formData.discordName || !formData.age || !formData.tos) {
+    if (!formData.age || !formData.tos) {
       return new Response(
-        JSON.stringify({ error: 'Missing required fields: Discord name, age, and TOS agreement are required' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: 'Missing required fields: Age and TOS agreement are required' }),
+        { status: 400, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } }
       )
     }
 
@@ -39,7 +39,7 @@ export async function onRequestPost(context) {
 
     // Prepare data for insertion
     const insertData = {
-      discord_name: formData.discordName,
+      discord_name: null, // No longer collected
       age: age,
       cpu: formData.cpu || null,
       gpu: formData.gpu || null,
@@ -187,7 +187,10 @@ export async function onRequestPost(context) {
       JSON.stringify({ error: 'Internal server error', details: error.message }),
       { 
         status: 500,
-        headers: { 'Content-Type': 'application/json' }
+        headers: { 
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*'
+        }
       }
     )
   }

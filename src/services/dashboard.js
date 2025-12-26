@@ -103,19 +103,11 @@ export async function getAvailableFields() {
  * Generate custom report
  * @param {string} field1 - First field to compare
  * @param {string} field2 - Second field to compare
- * @param {string|null} filter - Optional filter
- * @param {string|null} userDiscordName - Optional user Discord name for personal comparison
  * @returns {Promise<Object>} Report data
  */
-export async function generateReport(field1, field2, filter = null, userDiscordName = null) {
+export async function generateReport(field1, field2) {
   try {
-    let url = `${API_BASE}/dashboard?type=report&field1=${encodeURIComponent(field1)}&field2=${encodeURIComponent(field2)}`
-    if (filter) {
-      url += `&filter=${encodeURIComponent(filter)}`
-    }
-    if (userDiscordName) {
-      url += `&user=${encodeURIComponent(userDiscordName)}`
-    }
+    const url = `${API_BASE}/dashboard?type=report&field1=${encodeURIComponent(field1)}&field2=${encodeURIComponent(field2)}`
 
     const response = await fetch(url, {
       method: 'GET',

@@ -102,16 +102,15 @@ export async function onRequestGet(context) {
       // Generate custom report
       const field1 = url.searchParams.get('field1')
       const field2 = url.searchParams.get('field2')
-      const filter = url.searchParams.get('filter') || null
       
       if (!field1 || !field2) {
         return new Response(
           JSON.stringify({ error: 'field1 and field2 are required' }),
-          { status: 400, headers: { 'Content-Type': 'application/json' } }
+          { status: 400, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } }
         )
       }
       
-      const report = await generateReport(db, field1, field2, filter, userDiscordName)
+      const report = await generateReport(db, field1, field2)
       return new Response(
         JSON.stringify(report),
         { 
@@ -417,7 +416,7 @@ function getAvailableFields() {
 /**
  * Generate custom report comparing two fields
  */
-async function generateReport(db, field1, field2, filter, userDiscordName) {
+async function generateReport(db, field1, field2) {
   // Security: Never allow discord_name to be selected in reports
   if (field1 === 'discord_name' || field2 === 'discord_name') {
     throw new Error('Discord names cannot be included in reports for privacy reasons')
@@ -437,27 +436,10 @@ async function generateReport(db, field1, field2, filter, userDiscordName) {
   }
   
   // Build query - exclude discord_name from results
-  let query = `SELECT ${field1}, ${field2}, COUNT(*) as count`
+  // Note: field1 and field2 are validated against allowed list above, so safe to interpolate
+  const query = `SELECT ${field1}, ${field2}, COUNT(*) as count FROM survey_responses WHERE ${field1} IS NOT NULL AND ${field2} IS NOT NULL GROUP BY ${field1}, ${field2}`
   
-  if (userDiscordName) {
-    query += `, CASE WHEN discord_name = ? THEN 1 ELSE 0 END as is_user`
-  }
-  
-  query += ` FROM survey_responses WHERE ${field1} IS NOT NULL AND ${field2} IS NOT NULL`
-  
-  const params = []
-  if (userDiscordName) {
-    params.push(userDiscordName)
-  }
-  
-  if (filter) {
-    // Add filter logic if needed (should be validated separately)
-    query += ` AND ${filter}`
-  }
-  
-  query += ` GROUP BY ${field1}, ${field2}`
-  
-  const result = await db.prepare(query).bind(...params).all()
+  const result = await db.prepare(query).all()
   
   return {
     field1,

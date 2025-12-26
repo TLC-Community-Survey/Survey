@@ -3,7 +3,7 @@ CREATE TABLE IF NOT EXISTS survey_responses (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   
   -- Respondent Info (Required)
-  discord_name TEXT NOT NULL,
+  discord_name TEXT, -- Optional, no longer collected
   age INTEGER NOT NULL,
   cpu TEXT,
   gpu TEXT,

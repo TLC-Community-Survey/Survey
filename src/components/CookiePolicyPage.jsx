@@ -33,14 +33,18 @@ function CookiePolicyPage() {
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold mb-4">How We Use Cookies</h2>
+            <h2 className="text-2xl font-semibold mb-4">How We Use Cookies and LocalStorage</h2>
             <p className="text-notion-text-secondary mb-4">
-              We use session cookies exclusively for the following purposes:
+              We use session cookies and browser localStorage for the following purposes:
             </p>
             <ul className="list-disc list-inside space-y-2 text-notion-text-secondary ml-4">
               <li>
-                <strong>Session Management:</strong> To maintain your survey progress as you navigate 
+                <strong>Session Management:</strong> Session cookies maintain your survey session as you navigate 
                 through the form pages
+              </li>
+              <li>
+                <strong>Auto-Save Functionality:</strong> Browser localStorage automatically saves your form progress 
+                as you fill it out, allowing you to resume if you close the browser or navigate away
               </li>
               <li>
                 <strong>Data Integrity:</strong> To prevent duplicate submissions and ensure the 
@@ -50,6 +54,11 @@ function CookiePolicyPage() {
                 <strong>Security:</strong> To help protect against unauthorized access to your survey data
               </li>
             </ul>
+            <p className="text-notion-text-secondary mt-4">
+              <strong>Important:</strong> All data stored in localStorage remains on your device and is never 
+              transmitted to our servers until you submit the completed form. You can clear this data at any time 
+              through your browser settings.
+            </p>
           </section>
 
           <section>
@@ -87,8 +96,9 @@ function CookiePolicyPage() {
               <li>Block all cookies</li>
             </ul>
             <p className="text-notion-text-secondary mt-4">
-              <strong>Note:</strong> If you choose to block cookies, you may not be able to complete 
-              the survey, as session cookies are required for the survey to function properly.
+              <strong>Note:</strong> If you choose to block cookies or disable localStorage, you may not be able to 
+              complete the survey, as these technologies are required for the survey to function properly. 
+              Your form progress will not be saved if localStorage is disabled.
             </p>
           </section>
 

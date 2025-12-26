@@ -24,12 +24,63 @@ const RATING_OPTIONS = [
   { value: '5', label: '5 - Excellent' },
 ]
 
+const AGE_RANGES = [
+  { value: '16', label: '16-25' },
+  { value: '26', label: '26-35' },
+  { value: '36', label: '36-45' },
+  { value: '46', label: '46-55' },
+  { value: '56', label: '56-65' },
+  { value: '66', label: '66-75' },
+  { value: '76', label: '76+' },
+]
+
+const DRAFT_STORAGE_KEY = 'survey_draft'
+const DRAFT_STEP_KEY = 'survey_draft_step'
+
 function SurveyForm() {
   const navigate = useNavigate()
-  const [currentStep, setCurrentStep] = useState(1)
-  const [formData, setFormData] = useState({
+  
+  // Load draft data from localStorage if it exists
+  const loadDraft = () => {
+    try {
+      const savedData = localStorage.getItem(DRAFT_STORAGE_KEY)
+      const savedStep = localStorage.getItem(DRAFT_STEP_KEY)
+      if (savedData) {
+        return {
+          data: JSON.parse(savedData),
+          step: savedStep ? parseInt(savedStep) : 1
+        }
+      }
+    } catch (error) {
+      console.error('Error loading draft:', error)
+    }
+    return null
+  }
+  
+  // Save draft data to localStorage
+  const saveDraft = (data, step) => {
+    try {
+      localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(data))
+      localStorage.setItem(DRAFT_STEP_KEY, step.toString())
+    } catch (error) {
+      console.error('Error saving draft:', error)
+    }
+  }
+  
+  // Clear draft data
+  const clearDraft = () => {
+    try {
+      localStorage.removeItem(DRAFT_STORAGE_KEY)
+      localStorage.removeItem(DRAFT_STEP_KEY)
+    } catch (error) {
+      console.error('Error clearing draft:', error)
+    }
+  }
+  
+  const draft = loadDraft()
+  const [currentStep, setCurrentStep] = useState(draft?.step || 1)
+  const [formData, setFormData] = useState(draft?.data || {
     // Step 1: Respondent Info
-    discordName: '',
     age: '',
     cpu: '',
     cpuOther: '',
@@ -95,16 +146,22 @@ function SurveyForm() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitStatus, setSubmitStatus] = useState(null)
   const [openBugModal, setOpenBugModal] = useState(null)
+  const [hasDraft, setHasDraft] = useState(!!draft)
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target
-    setFormData((prev) => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value,
-      // Clear "Other" field when a non-Other option is selected
-      ...(name === 'cpu' && value !== 'Other' ? { cpuOther: '' } : {}),
-      ...(name === 'gpu' && value !== 'Other' ? { gpuOther: '' } : {}),
-    }))
+    setFormData((prev) => {
+      const updated = {
+        ...prev,
+        [name]: type === 'checkbox' ? checked : value,
+        // Clear "Other" field when a non-Other option is selected
+        ...(name === 'cpu' && value !== 'Other' ? { cpuOther: '' } : {}),
+        ...(name === 'gpu' && value !== 'Other' ? { gpuOther: '' } : {}),
+      }
+      // Auto-save to localStorage
+      saveDraft(updated, currentStep)
+      return updated
+    })
     // Clear error when user starts typing
     if (errors[name]) {
       setErrors((prev) => {
@@ -121,7 +178,10 @@ function SurveyForm() {
       const newValue = current.includes(value)
         ? current.filter((item) => item !== value)
         : [...current, value]
-      return { ...prev, [name]: newValue }
+      const updated = { ...prev, [name]: newValue }
+      // Auto-save to localStorage
+      saveDraft(updated, currentStep)
+      return updated
     })
   }
 
@@ -145,12 +205,8 @@ function SurveyForm() {
     const newErrors = {}
     
     if (step === 1) {
-      if (!formData.discordName.trim()) {
-        newErrors.discordName = 'Discord name is required'
-      }
-      const age = parseInt(formData.age)
-      if (!formData.age || isNaN(age) || age < 16) {
-        newErrors.age = 'You must be 16 years or older to participate'
+      if (!formData.age) {
+        newErrors.age = 'Please select your age range'
       }
       if (!formData.tos) {
         newErrors.tos = 'You must agree to the Terms of Service'
@@ -181,21 +237,38 @@ function SurveyForm() {
 
   const handleNext = () => {
     if (validateStep(currentStep)) {
-      setCurrentStep((prev) => Math.min(prev + 1, 4))
+      const nextStep = Math.min(currentStep + 1, 4)
+      setCurrentStep(nextStep)
+      // Save draft with new step
+      saveDraft(formData, nextStep)
       window.scrollTo(0, 0)
     }
   }
 
   const handlePrevious = () => {
-    setCurrentStep((prev) => Math.max(prev - 1, 1))
+    const prevStep = Math.max(currentStep - 1, 1)
+    setCurrentStep(prevStep)
+    // Save draft with new step
+    saveDraft(formData, prevStep)
     window.scrollTo(0, 0)
   }
 
-  // Check cookie consent and manage session
+  // Check cookie consent and localStorage availability
   useEffect(() => {
     if (!hasConsent()) {
       // Redirect to landing page if no consent
       navigate('/survey')
+      return
+    }
+    
+    // Check if localStorage is available
+    try {
+      const test = '__localStorage_test__'
+      localStorage.setItem(test, test)
+      localStorage.removeItem(test)
+    } catch (e) {
+      // localStorage not available - redirect to google.com
+      window.location.href = 'https://google.com'
       return
     }
     
@@ -234,6 +307,8 @@ function SurveyForm() {
       }
       
       await submitSurvey(submissionData)
+      // Clear draft after successful submission
+      clearDraft()
       setSubmitStatus('success')
     } catch (error) {
       console.error('Submission error:', error)
@@ -253,10 +328,11 @@ function SurveyForm() {
           </p>
           <button
             onClick={() => {
+              clearDraft()
+              setHasDraft(false)
               setSubmitStatus(null)
               setCurrentStep(1)
               setFormData({
-                discordName: '',
                 age: '',
                 cpu: '',
                 cpuOther: '',
@@ -352,34 +428,56 @@ function SurveyForm() {
         </span>
       </div>
 
+      {/* Draft restored notification */}
+      {hasDraft && (
+        <div className="mb-6 bg-blue-500/10 border border-blue-500/20 rounded-lg p-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <svg className="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            </svg>
+            <p className="text-blue-400 text-sm">
+              Your previous progress has been restored. Your form data is automatically saved as you fill it out.
+            </p>
+          </div>
+          <button
+            onClick={() => setHasDraft(false)}
+            className="text-blue-400 hover:text-blue-300 text-sm"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
+
       <form onSubmit={currentStep === 4 ? handleSubmit : (e) => { e.preventDefault(); handleNext(); }}>
         {/* Step 1: Respondent Info */}
         {currentStep === 1 && (
           <section className="bg-notion-bg-secondary rounded-lg p-6 space-y-6">
             <h3 className="text-2xl font-semibold mb-4">1️⃣ Respondent Info</h3>
             
-            <FormField
-              label="Discord Name"
-              name="discordName"
-              type="text"
-              value={formData.discordName}
-              onChange={handleChange}
-              error={errors.discordName}
-              placeholder="Your Discord username"
-              required
-            />
-            
-            <FormField
-              label="Age"
-              name="age"
-              type="number"
-              value={formData.age}
-              onChange={handleChange}
-              error={errors.age}
-              placeholder="Your age"
-              required
-              min="16"
-            />
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-notion-text mb-2">
+                Age Range <span className="text-red-500">*</span>
+              </label>
+              <select
+                name="age"
+                value={formData.age}
+                onChange={handleChange}
+                className={`w-full px-4 py-2 bg-notion-bg border rounded-lg text-notion-text focus:outline-none focus:ring-2 focus:ring-notion-blue ${
+                  errors.age ? 'border-red-500' : 'border-notion-border'
+                }`}
+                required
+              >
+                <option value="">Select your age range...</option>
+                {AGE_RANGES.map((range) => (
+                  <option key={range.value} value={range.value}>
+                    {range.label}
+                  </option>
+                ))}
+              </select>
+              {errors.age && (
+                <p className="text-red-500 text-sm mt-1">{errors.age}</p>
+              )}
+            </div>
             
             <SearchableDropdown
               label="CPU"

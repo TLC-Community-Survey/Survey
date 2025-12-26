@@ -147,12 +147,6 @@ function MethodologyPage() {
                   <td className="border border-notion-bg-tertiary p-3">Excellent</td>
                 </tr>
                 <tr>
-                  <td className="border border-notion-bg-tertiary p-3">Notion integration</td>
-                  <td className="border border-notion-bg-tertiary p-3">Limited</td>
-                  <td className="border border-notion-bg-tertiary p-3">Hacky</td>
-                  <td className="border border-notion-bg-tertiary p-3">Native</td>
-                </tr>
-                <tr>
                   <td className="border border-notion-bg-tertiary p-3">Data ownership</td>
                   <td className="border border-notion-bg-tertiary p-3">Platform-owned</td>
                   <td className="border border-notion-bg-tertiary p-3">Google-owned</td>
@@ -209,6 +203,89 @@ function MethodologyPage() {
             <p className="text-notion-text-secondary leading-relaxed mt-4">
               While initial trust requires explanation, transparency and published results help offset this.
             </p>
+          </div>
+        </section>
+
+        <section className="my-8">
+          <h3 className="text-2xl font-bold mb-4">Technical architecture</h3>
+          <p className="text-notion-text-secondary leading-relaxed mb-4">
+            This survey is built using a modern, serverless architecture that prioritizes privacy, reliability, and cost-effectiveness:
+          </p>
+          
+          <div className="mb-6">
+            <h4 className="text-xl font-semibold mb-3">Frontend: React + Vite</h4>
+            <p className="text-notion-text-secondary leading-relaxed mb-2">
+              The user interface is built with React and Vite, providing a fast, responsive experience. The frontend is statically generated and served via Cloudflare's global CDN.
+            </p>
+          </div>
+
+          <div className="mb-6">
+            <h4 className="text-xl font-semibold mb-3">Hosting: Cloudflare Pages</h4>
+            <p className="text-notion-text-secondary leading-relaxed mb-2">
+              The survey is hosted on Cloudflare Pages, which provides:
+            </p>
+            <ul className="list-disc list-inside text-notion-text-secondary space-y-2 ml-4">
+              <li>Global CDN distribution for fast loading worldwide</li>
+              <li>Automatic HTTPS encryption</li>
+              <li>Serverless function support for API endpoints</li>
+              <li>Free tier suitable for community projects</li>
+            </ul>
+          </div>
+
+          <div className="mb-6">
+            <h4 className="text-xl font-semibold mb-3">Database: Cloudflare D1 (SQLite)</h4>
+            <p className="text-notion-text-secondary leading-relaxed mb-2">
+              All survey responses are stored in Cloudflare D1, a serverless SQLite database that:
+            </p>
+            <ul className="list-disc list-inside text-notion-text-secondary space-y-2 ml-4">
+              <li>Stores data securely in Cloudflare's infrastructure</li>
+              <li>Provides structured, queryable data storage</li>
+              <li>Offers generous free tier limits (5GB storage, 5M reads/day)</li>
+              <li>Enables fast, efficient data retrieval for dashboards and reports</li>
+            </ul>
+            <p className="text-notion-text-secondary leading-relaxed mt-4">
+              <strong>D1 is the primary storage.</strong> All survey data is stored here first and remains here permanently.
+            </p>
+          </div>
+
+          <div className="mb-6">
+            <h4 className="text-xl font-semibold mb-3">API: Cloudflare Pages Functions</h4>
+            <p className="text-notion-text-secondary leading-relaxed mb-2">
+              Serverless API endpoints handle form submissions and data retrieval:
+            </p>
+            <ul className="list-disc list-inside text-notion-text-secondary space-y-2 ml-4">
+              <li><code>/api/submit</code> — Processes survey form submissions and stores data in D1</li>
+              <li><code>/api/dashboard</code> — Provides aggregate statistics and user-specific data</li>
+            </ul>
+            <p className="text-notion-text-secondary leading-relaxed mt-4">
+              These functions run on Cloudflare's edge network, ensuring low latency and high availability.
+            </p>
+          </div>
+
+          <div className="mb-6 bg-notion-bg-secondary rounded-lg p-4">
+            <h4 className="text-xl font-semibold mb-3">Data flow</h4>
+            <p className="text-notion-text-secondary leading-relaxed mb-2">
+              When you submit the survey:
+            </p>
+            <ol className="list-decimal list-inside text-notion-text-secondary space-y-2 ml-4">
+              <li>Your form data is sent to <code>/api/submit</code> (Cloudflare Pages Function)</li>
+              <li>The function validates your data and stores it in D1 database</li>
+              <li>You receive a unique edit link to update your response later</li>
+            </ol>
+            <p className="text-notion-text-secondary leading-relaxed mt-4">
+              All data is stored securely in D1 as the primary and permanent storage location.
+            </p>
+          </div>
+
+          <div className="mb-6">
+            <h4 className="text-xl font-semibold mb-3">Privacy and security</h4>
+            <ul className="list-disc list-inside text-notion-text-secondary space-y-2 ml-4">
+              <li>All data transmission is encrypted via HTTPS</li>
+              <li>Data is stored in Cloudflare's secure infrastructure</li>
+              <li>No third-party tracking or analytics are used</li>
+              <li>No cookies are used for tracking (only for survey functionality)</li>
+              <li>Source code is open-source and auditable</li>
+            </ul>
           </div>
         </section>
 

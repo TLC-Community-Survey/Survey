@@ -39,7 +39,7 @@ const REPORT_TEMPLATES = [
   },
 ]
 
-function ReportBuilder({ userDiscordName }) {
+function ReportBuilder() {
   const [fields, setFields] = useState(null)
   const [selectedField1, setSelectedField1] = useState('')
   const [selectedField2, setSelectedField2] = useState('')
@@ -81,7 +81,7 @@ function ReportBuilder({ userDiscordName }) {
     try {
       setLoading(true)
       setError(null)
-      const data = await generateReport(selectedField1, selectedField2, null, userDiscordName)
+      const data = await generateReport(selectedField1, selectedField2)
       setReportData(data)
     } catch (err) {
       console.error('Error generating report:', err)
@@ -243,18 +243,14 @@ function ReportBuilder({ userDiscordName }) {
                   const field2Value = row[reportData.field2]
                   const count = row.count || 0
                   const percentage = reportData.total > 0 ? ((count / reportData.total) * 100).toFixed(1) : 0
-                  const isUser = row.is_user === 1
 
                   return (
                     <tr
                       key={index}
-                      className={`border-b border-notion-border hover:bg-notion-surface/50 ${
-                        isUser ? 'bg-notion-blue/10' : ''
-                      }`}
+                      className="border-b border-notion-border hover:bg-notion-surface/50"
                     >
                       <td className="py-3 px-4 text-sm text-notion-text">
                         {field1Value !== null && field1Value !== undefined ? String(field1Value) : 'N/A'}
-                        {isUser && <span className="ml-2 text-xs text-notion-blue">(You)</span>}
                       </td>
                       <td className="py-3 px-4 text-sm text-notion-text">
                         {field2Value !== null && field2Value !== undefined ? String(field2Value) : 'N/A'}
@@ -275,19 +271,15 @@ function ReportBuilder({ userDiscordName }) {
               {reportData.data.slice(0, 10).map((row, index) => {
                 const count = row.count || 0
                 const percentage = reportData.total > 0 ? (count / reportData.total) * 100 : 0
-                const isUser = row.is_user === 1
 
                 return (
                   <div key={index} className="flex items-center gap-4">
                     <div className="text-xs text-notion-text-muted w-32 truncate">
                       {String(row[reportData.field1])} → {String(row[reportData.field2])}
-                      {isUser && <span className="ml-1 text-notion-blue">(You)</span>}
                     </div>
                     <div className="flex-1 bg-notion-surface rounded-full h-4 overflow-hidden">
                       <div
-                        className={`h-full transition-all ${
-                          isUser ? 'bg-notion-blue' : 'bg-notion-blue/50'
-                        }`}
+                        className="h-full transition-all bg-notion-blue/50"
                         style={{ width: `${percentage}%` }}
                       />
                     </div>

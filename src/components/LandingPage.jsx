@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import Callout from './Callout'
 import Footer from './Footer'
@@ -9,6 +9,13 @@ import { hasConsent } from '../utils/cookies'
 function LandingPage() {
   const navigate = useNavigate()
   const [showCookieModal, setShowCookieModal] = useState(false)
+
+  // Show cookie modal on page load if consent hasn't been given
+  useEffect(() => {
+    if (!hasConsent()) {
+      setShowCookieModal(true)
+    }
+  }, [])
 
   const handleStartSurvey = () => {
     if (hasConsent()) {
@@ -86,8 +93,7 @@ function LandingPage() {
 
         <Callout icon="⚠️" className="mt-8">
           <p className="mb-2">
-            <strong>Eligibility:</strong> You must be <strong>16 years or older</strong> to participate. 
-            We collect your Discord username and age for data quality purposes only.
+            <strong>Eligibility:</strong> You must be <strong>16 years or older</strong> to participate.
           </p>
           <p className="text-sm text-notion-text-secondary">
             For detailed information about data collection, privacy, and survey methodology, please review the <Link to="/" className="text-notion-accent hover:underline">home page</Link> and <Link to="/methodology" className="text-notion-accent hover:underline">methodology page</Link>.
