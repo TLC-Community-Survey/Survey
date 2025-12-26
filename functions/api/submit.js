@@ -156,8 +156,8 @@ export async function onRequestPost(context) {
       const result = await env.DB.prepare(
         `INSERT INTO survey_responses (
           discord_name, age, cpu, gpu, ram, tos, response_id, storage,
-          common_bugs_experienced, crashes_per_session, submitted_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+          common_bugs_experienced, crashes_per_session, additional_data, submitted_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
       ).bind(
         null,
         null, // age not required
@@ -169,6 +169,11 @@ export async function onRequestPost(context) {
         null,
         formData.bugsExperienced ? JSON.stringify([formData.bugsExperienced]) : null,
         formData.crashesPerSession || null,
+        JSON.stringify({
+          bugFrequency: formData.bugFrequency || null,
+          bugImpact: formData.bugImpact || null,
+          resolved: formData.resolved || null,
+        }),
         new Date().toISOString()
       ).run()
 
@@ -198,8 +203,8 @@ export async function onRequestPost(context) {
         `INSERT INTO survey_responses (
           discord_name, age, cpu, gpu, ram, tos, response_id, storage,
           quest_progress, pre_cu1_quests_rating, overall_quest_story_rating,
-          quest_bugs_experienced, submitted_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+          quest_bugs_experienced, additional_data, submitted_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
       ).bind(
         null,
         null, // age not required
@@ -213,6 +218,7 @@ export async function onRequestPost(context) {
         formData.preCu1QuestsRating ? parseInt(formData.preCu1QuestsRating) : null,
         formData.overallQuestRating ? parseInt(formData.overallQuestRating) : null,
         formData.questBugs && formData.questBugs !== 'no' ? 1 : 0,
+        formData.favoriteQuest || null, // Store favorite quest in additional_data field
         new Date().toISOString()
       ).run()
 
@@ -242,8 +248,8 @@ export async function onRequestPost(context) {
         `INSERT INTO survey_responses (
           discord_name, age, cpu, gpu, ram, tos, response_id, storage,
           story_engagement, overall_quest_story_rating, overall_score_post_cu1,
-          submitted_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+          additional_data, submitted_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
       ).bind(
         null,
         null, // age not required
@@ -256,6 +262,10 @@ export async function onRequestPost(context) {
         formData.storyEngagement ? parseInt(formData.storyEngagement) : null,
         formData.overallStoryRating ? parseInt(formData.overallStoryRating) : null,
         formData.overallScore ? parseInt(formData.overallScore) : null,
+        JSON.stringify({
+          storyPacing: formData.storyPacing ? parseInt(formData.storyPacing) : null,
+          characterDevelopment: formData.characterDevelopment ? parseInt(formData.characterDevelopment) : null,
+        }),
         new Date().toISOString()
       ).run()
 
