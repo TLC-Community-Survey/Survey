@@ -11,7 +11,8 @@ export async function onRequestGet(context) {
     const type = url.searchParams.get('type') || 'overall'
     const userDiscordName = url.searchParams.get('user') || null
     
-    const db = env.DB
+    // Use production database for dashboard (sanitized data only)
+    const db = env.DB_PROD || env.DB // Fallback to DB for backward compatibility
     
     // Check if database is available
     if (!db) {
@@ -19,7 +20,7 @@ export async function onRequestGet(context) {
       return new Response(
         JSON.stringify({ 
           error: 'Database Configuration Error', 
-          message: 'D1 database binding is not configured. Please check Cloudflare Pages Settings → Functions → D1 Database bindings and ensure the binding name is "DB".'
+          message: 'D1 database binding is not configured. Please check Cloudflare Pages Settings → Functions → D1 Database bindings and ensure DB_PROD (or DB) is configured.'
         }),
         { 
           status: 500,

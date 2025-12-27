@@ -1,22 +1,51 @@
 /**
  * Cloudflare Pages Function to handle survey submissions
- * Stores data in D1 database
+ * Stores data in D1 staging database for sanitization
  */
+
+import { checkRateLimit, getClientIP } from '../utils/sanitization.js'
 
 export async function onRequestPost(context) {
   const { request, env } = context
   
   try {
+    // Rate limiting check
+    const clientIP = getClientIP(request)
+    const rateLimitPerHour = parseInt(env.RATE_LIMIT_PER_HOUR || '10')
+    const rateLimit = await checkRateLimit(env.RATE_LIMIT_KV, clientIP, rateLimitPerHour)
+    
+    if (!rateLimit.allowed) {
+      return new Response(
+        JSON.stringify({ 
+          error: 'Rate limit exceeded',
+          message: `Too many submissions. Please try again after ${new Date(rateLimit.resetAt).toISOString()}`,
+          resetAt: rateLimit.resetAt
+        }),
+        { 
+          status: 429,
+          headers: { 
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+            'Retry-After': Math.ceil((rateLimit.resetAt - Date.now()) / 1000).toString()
+          } 
+        }
+      )
+    }
+
+    // Use staging database for all writes
+    const db = env.DB_STAGING || env.DB // Fallback to DB for backward compatibility
+    const prodDb = env.DB_PROD || null // Production DB for ID generation check
+    
     const formData = await request.json()
     const surveyType = formData.surveyType || 'full'
     
     // Handle hardware survey (required, no age/tos needed)
     if (surveyType === 'hardware') {
-      // Generate response ID
-      const responseId = await generateResponseId(env.DB)
+      // Generate response ID (check both staging and production for uniqueness)
+      const responseId = await generateResponseId(db, prodDb)
 
       // Insert hardware data (no age/tos required)
-      const result = await env.DB.prepare(
+      const result = await db.prepare(
         `INSERT INTO survey_responses (
           discord_name, age, cpu, gpu, ram, tos, response_id, storage, submitted_at
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
@@ -36,13 +65,17 @@ export async function onRequestPost(context) {
         JSON.stringify({ 
           success: true, 
           id: result.meta.last_row_id,
-          responseId: responseId
+          responseId: responseId,
+          message: 'Submission received. Data will be processed and sanitized.',
+          rateLimitRemaining: rateLimit.remaining
         }),
         { 
           status: 200,
           headers: { 
             'Content-Type': 'application/json',
             'Access-Control-Allow-Origin': '*',
+            'X-RateLimit-Remaining': rateLimit.remaining.toString(),
+            'X-RateLimit-Reset': rateLimit.resetAt.toString()
           } 
         }
       )
@@ -68,10 +101,10 @@ export async function onRequestPost(context) {
       }
 
       // Generate response ID
-      const responseId = await generateResponseId(env.DB)
+      const responseId = await generateResponseId(db)
 
       // Insert personal data
-      const result = await env.DB.prepare(
+      const result = await db.prepare(
         `INSERT INTO survey_responses (
           discord_name, age, cpu, gpu, ram, tos, response_id, playtime, submitted_at
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
@@ -91,13 +124,17 @@ export async function onRequestPost(context) {
         JSON.stringify({ 
           success: true, 
           id: result.meta.last_row_id,
-          responseId: responseId
+          responseId: responseId,
+          message: 'Submission received. Data will be processed and sanitized.',
+          rateLimitRemaining: rateLimit.remaining
         }),
         { 
           status: 200,
           headers: { 
             'Content-Type': 'application/json',
             'Access-Control-Allow-Origin': '*',
+            'X-RateLimit-Remaining': rateLimit.remaining.toString(),
+            'X-RateLimit-Reset': rateLimit.resetAt.toString()
           } 
         }
       )
@@ -106,10 +143,10 @@ export async function onRequestPost(context) {
     // Handle performance survey (required, no age/tos needed)
     if (surveyType === 'performance') {
       // Generate response ID
-      const responseId = await generateResponseId(env.DB)
+      const responseId = await generateResponseId(db)
 
       // Insert performance data
-      const result = await env.DB.prepare(
+      const result = await db.prepare(
         `INSERT INTO survey_responses (
           discord_name, age, cpu, gpu, ram, tos, response_id, storage,
           avg_fps_pre_cu1, avg_fps_post_cu1, pre_cu1_vs_post, overall_client_stability,
@@ -135,13 +172,17 @@ export async function onRequestPost(context) {
         JSON.stringify({ 
           success: true, 
           id: result.meta.last_row_id,
-          responseId: responseId
+          responseId: responseId,
+          message: 'Submission received. Data will be processed and sanitized.',
+          rateLimitRemaining: rateLimit.remaining
         }),
         { 
           status: 200,
           headers: { 
             'Content-Type': 'application/json',
             'Access-Control-Allow-Origin': '*',
+            'X-RateLimit-Remaining': rateLimit.remaining.toString(),
+            'X-RateLimit-Reset': rateLimit.resetAt.toString()
           } 
         }
       )
@@ -150,10 +191,10 @@ export async function onRequestPost(context) {
     // Handle bug survey (optional, no age/tos needed)
     if (surveyType === 'bug') {
       // Generate response ID
-      const responseId = await generateResponseId(env.DB)
+      const responseId = await generateResponseId(db)
 
       // Insert bug data with individual binary columns
-      const result = await env.DB.prepare(
+      const result = await db.prepare(
         `INSERT INTO survey_responses (
           discord_name, age, cpu, gpu, ram, tos, response_id, storage,
           bug_none, bug_boat_stuck, bug_boat_sinking, bug_sliding_buildings,
@@ -190,13 +231,17 @@ export async function onRequestPost(context) {
         JSON.stringify({ 
           success: true, 
           id: result.meta.last_row_id,
-          responseId: responseId
+          responseId: responseId,
+          message: 'Submission received. Data will be processed and sanitized.',
+          rateLimitRemaining: rateLimit.remaining
         }),
         { 
           status: 200,
           headers: { 
             'Content-Type': 'application/json',
             'Access-Control-Allow-Origin': '*',
+            'X-RateLimit-Remaining': rateLimit.remaining.toString(),
+            'X-RateLimit-Reset': rateLimit.resetAt.toString()
           } 
         }
       )
@@ -205,10 +250,10 @@ export async function onRequestPost(context) {
     // Handle quest survey (optional, no age/tos needed)
     if (surveyType === 'quest') {
       // Generate response ID
-      const responseId = await generateResponseId(env.DB)
+      const responseId = await generateResponseId(db)
 
       // Insert quest data
-      const result = await env.DB.prepare(
+      const result = await db.prepare(
         `INSERT INTO survey_responses (
           discord_name, age, cpu, gpu, ram, tos, response_id, storage,
           quest_progress, pre_cu1_quests_rating, overall_quest_story_rating,
@@ -235,13 +280,17 @@ export async function onRequestPost(context) {
         JSON.stringify({ 
           success: true, 
           id: result.meta.last_row_id,
-          responseId: responseId
+          responseId: responseId,
+          message: 'Submission received. Data will be processed and sanitized.',
+          rateLimitRemaining: rateLimit.remaining
         }),
         { 
           status: 200,
           headers: { 
             'Content-Type': 'application/json',
             'Access-Control-Allow-Origin': '*',
+            'X-RateLimit-Remaining': rateLimit.remaining.toString(),
+            'X-RateLimit-Reset': rateLimit.resetAt.toString()
           } 
         }
       )
@@ -250,10 +299,10 @@ export async function onRequestPost(context) {
     // Handle story survey (optional, no age/tos needed)
     if (surveyType === 'story') {
       // Generate response ID
-      const responseId = await generateResponseId(env.DB)
+      const responseId = await generateResponseId(db)
 
       // Insert story data
-      const result = await env.DB.prepare(
+      const result = await db.prepare(
         `INSERT INTO survey_responses (
           discord_name, age, cpu, gpu, ram, tos, response_id, storage,
           story_engagement, overall_quest_story_rating, overall_score_post_cu1,
@@ -282,13 +331,17 @@ export async function onRequestPost(context) {
         JSON.stringify({ 
           success: true, 
           id: result.meta.last_row_id,
-          responseId: responseId
+          responseId: responseId,
+          message: 'Submission received. Data will be processed and sanitized.',
+          rateLimitRemaining: rateLimit.remaining
         }),
         { 
           status: 200,
           headers: { 
             'Content-Type': 'application/json',
             'Access-Control-Allow-Origin': '*',
+            'X-RateLimit-Remaining': rateLimit.remaining.toString(),
+            'X-RateLimit-Reset': rateLimit.resetAt.toString()
           } 
         }
       )
@@ -384,8 +437,8 @@ export async function onRequestPost(context) {
       submitted_at: new Date().toISOString(),
     }
 
-    // Insert into D1 database
-    const result = await env.DB.prepare(
+    // Insert into D1 staging database
+    const result = await db.prepare(
       `INSERT INTO survey_responses (
         discord_name, age, cpu, gpu, playtime, ram, storage, tos, response_id,
         avg_fps_pre_cu1, avg_fps_post_cu1, pre_cu1_vs_post, overall_client_stability,
@@ -513,22 +566,44 @@ export async function onRequestPost(context) {
 }
 
 /**
- * Generate unique response ID in format TLC-CU1-{number}
+ * Generate unique response ID in format TLC-LH-{number}
+ * LH = Last Humans (the official build name)
+ * Checks both staging and production databases to ensure uniqueness
  */
-async function generateResponseId(db) {
+async function generateResponseId(db, prodDb = null) {
   // Get the highest existing response number
-  const result = await db.prepare(
-    "SELECT response_id FROM survey_responses WHERE response_id LIKE 'TLC-CU1-%' ORDER BY id DESC LIMIT 1"
+  // Check both old format (TLC-CU1) and new format (TLC-LH) for compatibility
+  // Check staging database first
+  const stagingResult = await db.prepare(
+    "SELECT response_id FROM survey_responses WHERE (response_id LIKE 'TLC-LH-%' OR response_id LIKE 'TLC-CU1-%') ORDER BY id DESC LIMIT 1"
   ).first()
   
+  // Also check production database if available
+  let prodResult = null
+  if (prodDb) {
+    prodResult = await prodDb.prepare(
+      "SELECT response_id FROM survey_responses WHERE (response_id LIKE 'TLC-LH-%' OR response_id LIKE 'TLC-CU1-%') ORDER BY id DESC LIMIT 1"
+    ).first()
+  }
+  
+  // Use the highest number from either database
+  const result = stagingResult || prodResult
+  
   if (result && result.response_id) {
-    const match = result.response_id.match(/TLC-CU1-(\d+)/)
-    if (match) {
-      const nextNum = parseInt(match[1]) + 1
-      return `TLC-CU1-${nextNum}`
+    // Try new format first
+    const matchLH = result.response_id.match(/TLC-LH-(\d+)/)
+    if (matchLH) {
+      const nextNum = parseInt(matchLH[1]) + 1
+      return `TLC-LH-${nextNum}`
+    }
+    // Fall back to old format for migration
+    const matchCU1 = result.response_id.match(/TLC-CU1-(\d+)/)
+    if (matchCU1) {
+      const nextNum = parseInt(matchCU1[1]) + 1
+      return `TLC-LH-${nextNum}`
     }
   }
   
   // Start from 1 if no existing responses
-  return 'TLC-CU1-1'
+  return 'TLC-LH-1'
 }

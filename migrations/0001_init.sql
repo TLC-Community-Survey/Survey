@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS survey_responses (
   playtime INTEGER, -- hours
   ram TEXT,
   tos INTEGER NOT NULL DEFAULT 0, -- checkbox: 0 = No, 1 = Yes
-  response_id TEXT UNIQUE, -- Generated: TLC-CU1-{id}
+  response_id TEXT UNIQUE, -- Generated: TLC-LH-{id} (LH = Last Humans)
   
   -- Performance and Stability (Required)
   avg_fps_pre_cu1 INTEGER,

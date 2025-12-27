@@ -19,7 +19,7 @@ database_id = "e556fdc3-22c6-4c8c-800b-31498ad9d8ad" # Existing DB becomes stagi
 [[d1_databases]]
 binding = "DB_PROD"
 database_name = "tlc-survey-db-prod"
-database_id = "PLACEHOLDER_DB_ID" # TODO: Create with: wrangler d1 create tlc-survey-db-prod
+database_id = "b2b381f0-8a93-4bb0-b60e-ceed029e4c45" # TODO: Create with: wrangler d1 create tlc-survey-db-prod
 
 # Legacy binding for backward compatibility during migration
 [[d1_databases]]
@@ -30,8 +30,8 @@ database_id = "e556fdc3-22c6-4c8c-800b-31498ad9d8ad"
 # KV Namespace for rate limiting
 [[kv_namespaces]]
 binding = "RATE_LIMIT_KV"
-id = "e93a364198744d5d9b51cbcfb28b127f" 
-preview_id = "e93a364198744d5d9b51cbcfb28b127f"
+id = "e93a364198744d5d9b51cbcfb28b127f" # Production namespace
+preview_id = "49aede8c4a55460e85cafc010d52da83" # Preview namespace for local development
 
 # Note: Cron triggers for Pages Functions are configured in Cloudflare Dashboard
 # Go to: Pages → Your Project → Settings → Functions → Cron Triggers
