@@ -76,7 +76,7 @@ export async function onRequestPost(context) {
       const recordId = result.meta.last_row_id
       sanitizeRecordImmediately(env, recordId).catch(err => {
         console.error(`Failed to sanitize record ${recordId}:`, err)
-        // Don't fail the request if sanitization fails - it will be retried by cron
+        // Don't fail the request if sanitization fails - can be retried manually via admin panel
       })
 
       return new Response(
@@ -142,7 +142,7 @@ export async function onRequestPost(context) {
       const recordId = result.meta.last_row_id
       sanitizeRecordImmediately(env, recordId).catch(err => {
         console.error(`Failed to sanitize record ${recordId}:`, err)
-        // Don't fail the request if sanitization fails - it will be retried by cron
+        // Don't fail the request if sanitization fails - can be retried manually via admin panel
       })
 
       return new Response(
@@ -197,7 +197,7 @@ export async function onRequestPost(context) {
       const recordId = result.meta.last_row_id
       sanitizeRecordImmediately(env, recordId).catch(err => {
         console.error(`Failed to sanitize record ${recordId}:`, err)
-        // Don't fail the request if sanitization fails - it will be retried by cron
+        // Don't fail the request if sanitization fails - can be retried manually via admin panel
       })
 
       return new Response(
@@ -263,7 +263,7 @@ export async function onRequestPost(context) {
       const recordId = result.meta.last_row_id
       sanitizeRecordImmediately(env, recordId).catch(err => {
         console.error(`Failed to sanitize record ${recordId}:`, err)
-        // Don't fail the request if sanitization fails - it will be retried by cron
+        // Don't fail the request if sanitization fails - can be retried manually via admin panel
       })
 
       return new Response(
@@ -319,7 +319,7 @@ export async function onRequestPost(context) {
       const recordId = result.meta.last_row_id
       sanitizeRecordImmediately(env, recordId).catch(err => {
         console.error(`Failed to sanitize record ${recordId}:`, err)
-        // Don't fail the request if sanitization fails - it will be retried by cron
+        // Don't fail the request if sanitization fails - can be retried manually via admin panel
       })
 
       return new Response(
@@ -377,7 +377,7 @@ export async function onRequestPost(context) {
       const recordId = result.meta.last_row_id
       sanitizeRecordImmediately(env, recordId).catch(err => {
         console.error(`Failed to sanitize record ${recordId}:`, err)
-        // Don't fail the request if sanitization fails - it will be retried by cron
+        // Don't fail the request if sanitization fails - can be retried manually via admin panel
       })
 
       return new Response(
