@@ -118,71 +118,79 @@ export async function onRequest(context) {
     return next()
   }
 
-  // Verify Zero Trust authentication
-  const authResult = await verifyAdminAccess(request, env)
+  // For API routes, verify Zero Trust authentication
+  // Frontend routes are handled by Cloudflare Zero Trust at the edge
+  const isApiRoute = url.pathname.startsWith('/admin/api/')
   
-  if (!authResult.authenticated) {
-    // Log failed access attempt
-    const ip = getClientIP(request)
-    console.warn(`Admin access denied: ${authResult.error || 'Not authenticated'} - IP: ${ip} - Path: ${url.pathname}`)
+  if (isApiRoute) {
+    const authResult = await verifyAdminAccess(request, env)
     
-    return new Response(
-      JSON.stringify({ 
-        error: 'Unauthorized', 
-        message: authResult.error || 'Authentication required',
-        details: 'Access requires GitHub authentication via Cloudflare Zero Trust. You must be a member of TLC-Community-Survey/Admins.'
-      }),
-      { 
-        status: 403,
-        headers: {
-          'Content-Type': 'application/json',
-          ...getSecurityHeaders()
+    if (!authResult.authenticated) {
+      // Log failed access attempt
+      const ip = getClientIP(request)
+      console.warn(`Admin API access denied: ${authResult.error || 'Not authenticated'} - IP: ${ip} - Path: ${url.pathname}`)
+      
+      return new Response(
+        JSON.stringify({ 
+          error: 'Unauthorized', 
+          message: authResult.error || 'Authentication required',
+          details: 'Access requires GitHub authentication via Cloudflare Zero Trust. You must be a member of TLC-Community-Survey/Admins.'
+        }),
+        { 
+          status: 403,
+          headers: {
+            'Content-Type': 'application/json',
+            ...getSecurityHeaders()
+          }
         }
-      }
+      )
+    }
+    
+    // Get user info for API routes
+    const userInfo = authResult.userInfo
+    const ip = getClientIP(request)
+    
+    // Check admin-specific rate limiting (per user, not per IP)
+    const adminRateLimit = parseInt(env.ADMIN_RATE_LIMIT_PER_HOUR || '100')
+    const rateLimitResult = await checkAdminRateLimit(
+      env.RATE_LIMIT_KV, 
+      userInfo.githubUsername, 
+      adminRateLimit
     )
-  }
-
-  // Get user info for rate limiting and audit logging
-  const userInfo = authResult.userInfo
-  const ip = getClientIP(request)
-  
-  // Check admin-specific rate limiting (per user, not per IP)
-  const adminRateLimit = parseInt(env.ADMIN_RATE_LIMIT_PER_HOUR || '100')
-  const rateLimitResult = await checkAdminRateLimit(
-    env.RATE_LIMIT_KV, 
-    userInfo.githubUsername, 
-    adminRateLimit
-  )
 
     if (!rateLimitResult.allowed) {
-    // Log rate limit exceeded
-    const stagingDb = env.DB_STAGING || env.DB
-    await logAdminAction(stagingDb, userInfo, 'rate_limit_exceeded', url.pathname, ip, { 
-      limit: adminRateLimit,
-      resetAt: rateLimitResult.resetAt 
-    })
-    
-    return new Response(
-      JSON.stringify({ 
-        error: 'Rate limit exceeded',
-        message: `Too many admin requests. Please try again after ${new Date(rateLimitResult.resetAt).toISOString()}`,
-        resetAt: rateLimitResult.resetAt
-      }),
-      { 
-        status: 429,
-        headers: {
-          'Content-Type': 'application/json',
-          'Retry-After': Math.ceil((rateLimitResult.resetAt - Date.now()) / 1000).toString(),
-          ...getSecurityHeaders()
+      // Log rate limit exceeded
+      const stagingDb = env.DB_STAGING || env.DB
+      await logAdminAction(stagingDb, userInfo, 'rate_limit_exceeded', url.pathname, ip, { 
+        limit: adminRateLimit,
+        resetAt: rateLimitResult.resetAt 
+      })
+      
+      return new Response(
+        JSON.stringify({ 
+          error: 'Rate limit exceeded',
+          message: `Too many admin requests. Please try again after ${new Date(rateLimitResult.resetAt).toISOString()}`,
+          resetAt: rateLimitResult.resetAt
+        }),
+        { 
+          status: 429,
+          headers: {
+            'Content-Type': 'application/json',
+            'Retry-After': Math.ceil((rateLimitResult.resetAt - Date.now()) / 1000).toString(),
+            ...getSecurityHeaders()
+          }
         }
-      }
-    )
-  }
+      )
+    }
 
-  // Log admin action to D1 database
-  const action = request.method === 'GET' ? 'read' : request.method.toLowerCase()
-  const stagingDb = env.DB_STAGING || env.DB
-  await logAdminAction(stagingDb, userInfo, action, url.pathname, ip)
+    // Log admin action to D1 database
+    const action = request.method === 'GET' ? 'read' : request.method.toLowerCase()
+    const stagingDb = env.DB_STAGING || env.DB
+    await logAdminAction(stagingDb, userInfo, action, url.pathname, ip)
+  }
+  
+  // For frontend routes, just pass through (Cloudflare Zero Trust handles auth at edge)
+  // For API routes, continue to handler after authentication
 
   // Continue to the actual handler
   const response = await next()
