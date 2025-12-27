@@ -7,6 +7,8 @@
 const SESSION_DURATION = 24 * 60 * 60 // 24 hours in seconds
 const SESSION_COOKIE_NAME = 'admin_session'
 const CF_ACCESS_JWT_HEADER = 'CF-Access-JWT-Assertion'
+const CRON_TRIGGER_HEADER = 'CF-Scheduled'
+const CRON_SECRET_HEADER = 'X-Cron-Secret'
 
 /**
  * Generate a secure session token
@@ -66,6 +68,25 @@ async function verifyCloudflareAccess(request, env) {
     }
     const payload = JSON.parse(atob(base64))
     
+    // Validate expiration if present
+    const now = Math.floor(Date.now() / 1000)
+    if (payload.exp && payload.exp < now) {
+      return { authenticated: false }
+    }
+
+    // Validate audience if configured
+    if (env.CF_ACCESS_AUD) {
+      const audList = Array.isArray(payload.aud) ? payload.aud : [payload.aud]
+      if (!audList.includes(env.CF_ACCESS_AUD)) {
+        return { authenticated: false }
+      }
+    }
+
+    // Validate issuer if configured
+    if (env.CF_ACCESS_ISS && payload.iss !== env.CF_ACCESS_ISS) {
+      return { authenticated: false }
+    }
+
     // Extract user information
     const userInfo = {
       email: payload.email || payload.sub,
@@ -80,6 +101,26 @@ async function verifyCloudflareAccess(request, env) {
     console.error('CF Access JWT verification error:', error)
     return { authenticated: false }
   }
+}
+
+/**
+ * Check if request is an authorized cron trigger
+ * @param {Request} request - HTTP request
+ * @param {Object} env - Cloudflare environment variables
+ * @returns {boolean} - True if authorized cron trigger
+ */
+export function isAuthorizedCronRequest(request, env) {
+  const isCronTrigger = request.headers.get(CRON_TRIGGER_HEADER) !== null
+  if (!isCronTrigger) {
+    return false
+  }
+
+  if (!env.CRON_SECRET) {
+    return false
+  }
+
+  const providedSecret = request.headers.get(CRON_SECRET_HEADER)
+  return Boolean(providedSecret && providedSecret === env.CRON_SECRET)
 }
 
 /**
@@ -249,4 +290,3 @@ export function requireAuth(handler) {
     return handler(context)
   }
 }
-

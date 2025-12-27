@@ -13,6 +13,7 @@ import {
   getSessionCookieHeader,
   getClearSessionCookieHeader
 } from '../utils/auth.js'
+import { checkRateLimit, getClientIP } from '../utils/sanitization.js'
 
 /**
  * Infer survey type from record data
@@ -88,6 +89,26 @@ export async function onRequestPost(context) {
  */
 async function handleLogin(request, env) {
   try {
+    const clientIP = getClientIP(request)
+    const rateLimitPerHour = parseInt(env.ADMIN_LOGIN_LIMIT_PER_HOUR || '5')
+    const rateLimit = await checkRateLimit(env.RATE_LIMIT_KV, `admin_login:${clientIP}`, rateLimitPerHour)
+
+    if (!rateLimit.allowed) {
+      return new Response(
+        JSON.stringify({ 
+          error: 'Rate limit exceeded',
+          message: `Too many login attempts. Please try again after ${new Date(rateLimit.resetAt).toISOString()}`
+        }),
+        { 
+          status: 429,
+          headers: { 
+            'Content-Type': 'application/json',
+            'Retry-After': Math.ceil((rateLimit.resetAt - Date.now()) / 1000).toString()
+          } 
+        }
+      )
+    }
+
     const body = await request.json()
     const { password } = body
     
@@ -389,4 +410,3 @@ async function handleStatus(env) {
     { status: 200, headers: { 'Content-Type': 'application/json' } }
   )
 }
-

@@ -5,16 +5,14 @@
  */
 
 import { filterContent, validateSurveyData, sanitizeSurveyData } from '../utils/sanitization.js'
-import { isAuthenticated, unauthorizedResponse } from '../utils/auth.js'
+import { isAuthenticated, unauthorizedResponse, isAuthorizedCronRequest } from '../utils/auth.js'
 import { getEnvironmentConfig } from '../utils/environment.js'
 
 export async function onRequestPost(context) {
   const { request, env } = context
   
-  // Check authentication (skip for cron triggers)
-  // Cron triggers don't include Authorization header, so we allow them through
-  // Manual triggers require authentication
-  const isCronTrigger = request.headers.get('CF-Scheduled') !== null
+  // Check authentication (allow authorized cron triggers)
+  const isCronTrigger = isAuthorizedCronRequest(request, env)
   if (!isCronTrigger) {
     const authenticated = await isAuthenticated(request, env)
     if (!authenticated) {
@@ -226,4 +224,3 @@ async function insertToProduction(db, record) {
     `INSERT INTO survey_responses (${columns.join(', ')}) VALUES (${placeholders})`
   ).bind(...values).run()
 }
-

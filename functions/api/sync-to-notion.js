@@ -7,15 +7,13 @@
  * Only use this if you want to sync data to Notion for reports/views.
  */
 
-import { isAuthenticated, unauthorizedResponse } from '../utils/auth.js'
+import { isAuthenticated, unauthorizedResponse, isAuthorizedCronRequest } from '../utils/auth.js'
 
 export async function onRequestPost(context) {
   const { request, env } = context
   
-  // Check authentication (skip for cron triggers)
-  // Cron triggers don't include Authorization header, so we allow them through
-  // Manual triggers require authentication
-  const isCronTrigger = request.headers.get('CF-Scheduled') !== null
+  // Check authentication (allow authorized cron triggers)
+  const isCronTrigger = isAuthorizedCronRequest(request, env)
   if (!isCronTrigger) {
     const authenticated = await isAuthenticated(request, env)
     if (!authenticated) {
@@ -25,12 +23,12 @@ export async function onRequestPost(context) {
   
   try {
     // Check if Notion is configured
-    const notionApiKey = env.VITE_NOTION_API_KEY
+    const notionApiKey = env.NOTION_API_KEY
     if (!notionApiKey) {
       return new Response(
         JSON.stringify({ 
           error: 'Notion API key not configured',
-          message: 'Notion sync is optional. The survey works without it. To enable sync, add VITE_NOTION_API_KEY to your environment variables.'
+          message: 'Notion sync is optional. The survey works without it. To enable sync, add NOTION_API_KEY to your environment variables.'
         }),
         { status: 200, headers: { 'Content-Type': 'application/json' } }
       )
@@ -62,24 +60,24 @@ export async function onRequestPost(context) {
         // or use a single "All Responses" database
         
         // Option 1: Sync to Respondent Info database (main database)
-        const respondentDbId = env.VITE_NOTION_DB_1
+        const respondentDbId = env.NOTION_DB_1
         if (respondentDbId) {
           await syncToRespondentInfo(notion, respondentDbId, record)
         }
         
         // Option 2: Sync to Performance database if performance data exists
-        if (record.avg_fps_pre_cu1 && env.VITE_NOTION_DB_2) {
-          await syncToPerformance(notion, env.VITE_NOTION_DB_2, record)
+        if (record.avg_fps_pre_cu1 && env.NOTION_DB_2) {
+          await syncToPerformance(notion, env.NOTION_DB_2, record)
         }
         
         // Option 3: Sync to Quests database if quest data exists
-        if (record.quest_progress && env.VITE_NOTION_DB_3) {
-          await syncToQuests(notion, env.VITE_NOTION_DB_3, record)
+        if (record.quest_progress && env.NOTION_DB_3) {
+          await syncToQuests(notion, env.NOTION_DB_3, record)
         }
         
         // Option 4: Sync to Overall Feelings database if feedback exists
-        if (record.open_feedback_space && env.VITE_NOTION_DB_4) {
-          await syncToOverallFeelings(notion, env.VITE_NOTION_DB_4, record)
+        if (record.open_feedback_space && env.NOTION_DB_4) {
+          await syncToOverallFeelings(notion, env.NOTION_DB_4, record)
         }
 
         // Mark as synced in D1

@@ -147,6 +147,9 @@ export async function onRequestGet(context) {
       name: error.name
     })
     
+    const envConfig = getEnvironmentConfig(request, env)
+    const exposeDetails = envConfig.isSandbox
+
     // Provide more helpful error messages for common issues
     let errorMessage = 'An error occurred while processing your request. Please try again later.'
     let errorType = 'Internal server error'
@@ -162,8 +165,8 @@ export async function onRequestGet(context) {
     } else if (errorMsg.includes('syntax error')) {
       errorType = 'Database Query Error'
       errorMessage = 'Database query syntax error. Please check the server logs for details.'
-    } else if (errorMsg.length > 0 && errorMsg.length < 200) {
-      // Include the error message if it's short and doesn't contain sensitive info
+    } else if (exposeDetails && errorMsg.length > 0 && errorMsg.length < 200) {
+      // Include the error message only in sandbox/preview
       errorMessage = errorMsg
     }
     
@@ -460,4 +463,3 @@ async function generateReport(db, field1, field2) {
     total: result.results?.reduce((sum, row) => sum + (row.count || 0), 0) || 0,
   }
 }
-
