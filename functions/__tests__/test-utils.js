@@ -16,8 +16,6 @@ export function createMockEnv(overrides = {}) {
     DB: mockDb, // Legacy binding
     RATE_LIMIT_KV: mockKv,
     RATE_LIMIT_PER_HOUR: '10',
-    BACKUP_SECRET: 'test-backup-secret',
-    SANITIZE_SECRET: 'test-sanitize-secret',
     ...overrides
   }
 }

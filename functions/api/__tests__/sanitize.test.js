@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { onRequestPost, onScheduled } from '../sanitize.js'
+import { onRequestPost } from '../sanitize.js'
 import { createMockEnv, createMockRequest, createMockContext } from '../../__tests__/test-utils.js'
 
 describe('Sanitize API', () => {
@@ -35,14 +35,14 @@ describe('Sanitize API', () => {
       expect(data.approved).toBeGreaterThanOrEqual(0)
     })
 
-    it('allows access without ADMIN_PASSWORD if not configured (cron)', async () => {
+    it('requires authentication when ADMIN_PASSWORD is configured', async () => {
       const envNoPassword = createMockEnv({ ADMIN_PASSWORD: undefined })
-      // Simulate cron trigger
-      const request = createMockRequest({}, { 'CF-Scheduled': 'true' })
+      const request = createMockRequest({})
       context = createMockContext(envNoPassword, request)
 
+      // Without authentication, should fail
       const response = await onRequestPost(context)
-      expect(response.status).toBe(200)
+      expect(response.status).toBe(401)
     })
     
     it('requires authentication when ADMIN_PASSWORD is set', async () => {
@@ -65,8 +65,8 @@ describe('Sanitize API', () => {
       expect(response.status).toBe(200)
     })
 
-    it('allows access without secret if not configured', async () => {
-      const envNoSecret = createMockEnv({ SANITIZE_SECRET: undefined })
+    it('allows access with authentication', async () => {
+      const envNoSecret = createMockEnv({ ADMIN_PASSWORD: 'test-password' })
       const recordId = envNoSecret.DB_STAGING._addRecord({
         age: 25,
         cpu: 'Intel i7',
@@ -75,33 +75,13 @@ describe('Sanitize API', () => {
         submitted_at: new Date().toISOString()
       })
 
-      const request = createMockRequest({})
+      const request = createMockRequest({}, {
+        'Authorization': 'Bearer test-password'
+      })
       context = createMockContext(envNoSecret, request)
 
       const response = await onRequestPost(context)
       expect(response.status).toBe(200)
-    })
-  })
-
-  describe('Cron Trigger', () => {
-    it('processes records via cron', async () => {
-      // Add pending records
-      env.DB_STAGING._addRecord({
-        age: 25,
-        cpu: 'Intel i7',
-        tos: 1,
-        response_id: 'TLC-LH-1',
-        submitted_at: new Date().toISOString(),
-        sanitization_status: 'pending'
-      })
-
-      const event = {}
-      const ctx = {
-        waitUntil: vi.fn((promise) => promise)
-      }
-
-      await onScheduled(event, env, ctx)
-      expect(ctx.waitUntil).toHaveBeenCalled()
     })
   })
 
