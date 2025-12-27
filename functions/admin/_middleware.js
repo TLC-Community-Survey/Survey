@@ -128,13 +128,19 @@ export async function onRequest(context) {
     if (!authResult.authenticated) {
       // Log failed access attempt
       const ip = getClientIP(request)
-      console.warn(`Admin API access denied: ${authResult.error || 'Not authenticated'} - IP: ${ip} - Path: ${url.pathname}`)
+      const jwtHeader = request.headers.get('CF-Access-JWT-Assertion')
+      console.warn(`Admin API access denied: ${authResult.error || 'Not authenticated'} - IP: ${ip} - Path: ${url.pathname} - JWT present: ${!!jwtHeader}`)
       
       return new Response(
         JSON.stringify({ 
           error: 'Unauthorized', 
           message: authResult.error || 'Authentication required',
-          details: 'Access requires GitHub authentication via Cloudflare Zero Trust. You must be a member of TLC-Community-Survey/Admins.'
+          details: 'Access requires GitHub authentication via Cloudflare Zero Trust. You must be a member of TLC-Community-Survey/Admins.',
+          debug: {
+            path: url.pathname,
+            hasJWT: !!jwtHeader,
+            error: authResult.error
+          }
         }),
         { 
           status: 403,
@@ -189,10 +195,7 @@ export async function onRequest(context) {
     await logAdminAction(stagingDb, userInfo, action, url.pathname, ip)
   }
   
-  // For frontend routes, just pass through (Cloudflare Zero Trust handles auth at edge)
-  // For API routes, continue to handler after authentication
-
-  // Continue to the actual handler
+  // Continue to the actual handler (middleware passes through to API handlers or frontend)
   const response = await next()
   
   // Add security headers to response

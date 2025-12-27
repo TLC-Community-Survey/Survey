@@ -3,22 +3,13 @@
  * Returns audit logs
  */
 
-import { isAdminAuthenticated } from '../utils/adminAuth.js'
 import { getEnvironmentConfig } from '../../utils/environment.js'
 
 export async function onRequestGet(context) {
   const { request, env } = context
   
   try {
-    // Verify admin authentication
-    const authenticated = await isAdminAuthenticated(request, env)
-    if (!authenticated) {
-      return new Response(
-        JSON.stringify({ error: 'Unauthorized', message: 'Authentication required' }),
-        { status: 401, headers: { 'Content-Type': 'application/json' } }
-      )
-    }
-    
+    // Authentication is handled by middleware - just process the request
     const url = new URL(request.url)
     const limit = parseInt(url.searchParams.get('limit') || '50')
     

@@ -3,22 +3,13 @@
  * Returns system status information
  */
 
-import { isAdminAuthenticated } from '../utils/adminAuth.js'
 import { getEnvironmentConfig } from '../../utils/environment.js'
 
 export async function onRequestGet(context) {
   const { request, env } = context
   
   try {
-    // Verify admin authentication
-    const authenticated = await isAdminAuthenticated(request, env)
-    if (!authenticated) {
-      return new Response(
-        JSON.stringify({ error: 'Unauthorized', message: 'Authentication required' }),
-        { status: 401, headers: { 'Content-Type': 'application/json' } }
-      )
-    }
-    
+    // Authentication is handled by middleware - just process the request
     return await handleStatus(request, env)
   } catch (error) {
     console.error('Admin status API error:', error)
