@@ -8,6 +8,17 @@ pages_build_output_dir = "dist"
 # Do NOT include a "main" field - that would make it a Worker
 # The /functions directory contains Pages Functions, not a Worker script
 
+# IMPORTANT: All bindings below are managed by wrangler when deploying with:
+#   npx wrangler pages deploy dist --project-name survey
+# 
+# When bindings are managed by wrangler, they will show as "configured by wrangler"
+# in the Cloudflare Dashboard and cannot be changed via the UI.
+# 
+# To change bindings, update this file and redeploy with wrangler.
+# 
+# NOTE: If you want to use Git-based deployments instead, remove bindings from
+# this file and configure them manually in Cloudflare Dashboard.
+
 # D1 Database bindings
 # Staging database - receives all raw submissions
 [[d1_databases]]
@@ -33,12 +44,37 @@ binding = "RATE_LIMIT_KV"
 id = "e93a364198744d5d9b51cbcfb28b127f" # Production namespace
 preview_id = "49aede8c4a55460e85cafc010d52da83" # Preview namespace for local development
 
-# Note: Cron triggers for Pages Functions are configured in Cloudflare Dashboard
-# Go to: Pages → Your Project → Settings → Functions → Cron Triggers
+# Environment variables
+# These are used by Pages Functions and can be overridden in Cloudflare Dashboard
+[vars]
+# Rate limiting configuration
+RATE_LIMIT_PER_HOUR = "10"
+
+# Optional: Secrets for securing endpoints (set via Cloudflare Dashboard secrets)
+# BACKUP_SECRET = "" # Set via: wrangler secret put BACKUP_SECRET
+# SANITIZE_SECRET = "" # Set via: wrangler secret put SANITIZE_SECRET
+
+# Optional: Notion integration (set via Cloudflare Dashboard secrets if using Notion)
+# VITE_NOTION_API_KEY = "" # Set via: wrangler secret put VITE_NOTION_API_KEY
+# VITE_NOTION_DB_1 = ""
+# VITE_NOTION_DB_2 = ""
+# VITE_NOTION_DB_3 = ""
+# VITE_NOTION_DB_4 = ""
+# VITE_NOTION_DB_5 = ""
+
+# Note: Cron triggers for Pages Functions
+# Cron triggers MUST be configured in Cloudflare Dashboard (they cannot be set via wrangler.toml)
+# Go to: Pages → survey → Settings → Functions → Cron Triggers
 # 
 # Recommended cron triggers:
 # - "0 * * * *" (hourly) → /api/sanitize (sanitization job)
 # - "0 0 * * *" (daily) → /api/backup (backup job)
 # 
-# Alternatively, use Cloudflare Workers with cron triggers for more control
+# Deploy with wrangler (bindings are automatically applied from this file):
+#   npm run build
+#   npx wrangler pages deploy dist --project-name survey
+# 
+# Set secrets (do this once, secrets are separate from bindings):
+#   npx wrangler pages secret put BACKUP_SECRET --project-name survey
+#   npx wrangler pages secret put SANITIZE_SECRET --project-name survey
 
