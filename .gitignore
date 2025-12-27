@@ -63,3 +63,6 @@ ui/term/
 
 # Local documentation (LLM-generated docs - not for repo)
 docs/
+
+# Scripts (local development scripts)
+scripts/
