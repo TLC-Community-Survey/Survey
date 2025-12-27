@@ -106,7 +106,7 @@ ENVIRONMENT = "sandbox"
 # - Password is NEVER stored client-side - only session tokens in HttpOnly cookies
 # - Will be removed after Zero Trust migration is complete
 # 
-# All API endpoints except /api/submit are protected
+# All API endpoints are protected. /submit endpoint is public (moved out of /api to avoid Zero Trust protection)
 # Protected endpoints: /api/dashboard, /api/admin/*, /api/sanitize, /api/backup, /api/sync-to-notion
 # All protected endpoints require authentication (Zero Trust or password-based)
 

@@ -11,7 +11,7 @@ const API_BASE = '/api'
  */
 export async function submitSurvey(formData) {
   try {
-    const response = await fetch(`${API_BASE}/submit`, {
+    const response = await fetch('/submit', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -41,9 +41,24 @@ export async function submitSurvey(formData) {
     return await response.json()
   } catch (error) {
     console.error('Error submitting survey:', error)
+    console.error('Error details:', {
+      name: error.name,
+      message: error.message,
+      stack: error.stack
+    })
+    
     // Enhance error message for network errors
     if (error.name === 'TypeError' && error.message.includes('fetch')) {
-      throw new Error('Network error: Unable to connect to the server. Please check your internet connection and try again.')
+      // Check if we're in development mode
+      const isDevelopment = import.meta.env.DEV || process.env.NODE_ENV === 'development'
+      
+      if (isDevelopment) {
+        // In development, provide more helpful error message
+        throw new Error('Network error: Unable to connect to the API server. Make sure you are running the app with `npm run dev:full` (not just `npm run dev`) to enable Cloudflare Pages Functions.')
+      } else {
+        // In production, generic error message
+        throw new Error('Network error: Unable to connect to the server. Please check your internet connection and try again.')
+      }
     }
     throw error
   }

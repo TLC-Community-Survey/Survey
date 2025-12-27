@@ -31,7 +31,7 @@ describe('API Service', () => {
 
     expect(result).toEqual(mockResponse)
     expect(global.fetch).toHaveBeenCalledWith(
-      '/api/submit',
+      '/submit',
       expect.objectContaining({
         method: 'POST',
         headers: {

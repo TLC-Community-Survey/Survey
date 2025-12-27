@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { onRequestPost } from '../submit.js'
+import { onRequestPost } from '../../submit.js'
 import { createMockEnv, createMockRequest, createMockContext } from '../../__tests__/test-utils.js'
 
 describe('Submit API', () => {

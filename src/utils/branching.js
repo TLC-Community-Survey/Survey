@@ -1,7 +1,7 @@
 /**
  * Branching logic helpers
  * 
- * NOTE: Branching logic is now handled server-side in functions/api/submit.js
+ * NOTE: Branching logic is now handled server-side in functions/submit.js
  * This file is kept for reference but is not currently used by the frontend.
  * 
  * The server-side determineBranch() function in submit.js handles branch assignment

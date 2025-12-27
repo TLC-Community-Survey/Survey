@@ -254,7 +254,7 @@ function MethodologyPage() {
               Serverless API endpoints handle form submissions and data retrieval:
             </p>
             <ul className="list-disc list-inside text-notion-text-secondary space-y-2 ml-4">
-              <li><code>/api/submit</code> — Processes survey form submissions and stores data in D1</li>
+              <li><code>/submit</code> — Processes survey form submissions and stores data in D1</li>
               <li><code>/api/dashboard</code> — Provides aggregate statistics and user-specific data</li>
             </ul>
             <p className="text-notion-text-secondary leading-relaxed mt-4">
@@ -268,7 +268,7 @@ function MethodologyPage() {
               When you submit the survey:
             </p>
             <ol className="list-decimal list-inside text-notion-text-secondary space-y-2 ml-4">
-              <li>Your form data is sent to <code>/api/submit</code> (Cloudflare Pages Function)</li>
+              <li>Your form data is sent to <code>/submit</code> (Cloudflare Pages Function)</li>
               <li>The function validates your data and stores it in D1 database</li>
               <li>You receive a unique edit link to update your response later</li>
             </ol>
