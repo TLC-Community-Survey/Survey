@@ -21,11 +21,11 @@ A multi-branching survey platform built with React, Vite, and Cloudflare D1 for 
 ## Architecture
 
 ```
-User submits form ΓåÆ Cloudflare Pages Function ΓåÆ Rate limiting ΓåÆ D1 Staging DB
-                                                      Γåô
+User submits form → Cloudflare Pages Function → Rate limiting → D1 Staging DB
+                                                      ↓
                                             Sanitization Process
-                                                      Γåô
-                                            D1 Production DB ΓåÆ Dashboard
+                                                      ↓
+                                            D1 Production DB → Dashboard
 ```
 
 ## Quick Start
