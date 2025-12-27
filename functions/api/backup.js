@@ -5,15 +5,13 @@
  * Protected endpoint - requires ADMIN_PASSWORD Bearer token
  */
 
-import { isAuthenticated, unauthorizedResponse } from '../utils/auth.js'
+import { isAuthenticated, unauthorizedResponse, isAuthorizedCronRequest } from '../utils/auth.js'
 
 export async function onRequestPost(context) {
   const { request, env } = context
   
-  // Check authentication (skip for cron triggers)
-  // Cron triggers don't include Authorization header, so we allow them through
-  // Manual triggers require authentication
-  const isCronTrigger = request.headers.get('CF-Scheduled') !== null
+  // Check authentication (allow authorized cron triggers)
+  const isCronTrigger = isAuthorizedCronRequest(request, env)
   if (!isCronTrigger) {
     const authenticated = await isAuthenticated(request, env)
     if (!authenticated) {
@@ -214,4 +212,3 @@ export async function listBackups(env) {
     return []
   }
 }
-

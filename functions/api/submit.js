@@ -590,9 +590,12 @@ export async function onRequestPost(context) {
       name: error.name
     })
     
+    const envConfig = getEnvironmentConfig(request, env)
+    const exposeDetails = envConfig.isSandbox
+
     // Provide more helpful error messages for common issues
     let errorMessage = 'Internal server error'
-    let errorDetails = error.message || 'Unknown error'
+    let errorDetails = 'An unexpected error occurred. Please try again later.'
     
     // Check for database constraint violations
     if (error.message && (
@@ -608,8 +611,8 @@ export async function onRequestPost(context) {
     } else if (error.message && error.message.includes('no such column')) {
       errorMessage = 'Database schema error'
       errorDetails = 'Database column not found. Please run migrations to update the schema.'
-    } else if (error.message && error.message.length < 200) {
-      // Include the error message if it's short and doesn't contain sensitive info
+    } else if (exposeDetails && error.message && error.message.length < 200) {
+      // Include the error message only in sandbox/preview
       errorDetails = error.message
     }
     
